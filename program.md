@@ -1,13 +1,14 @@
-# Dealing with Spatio-temporal Data in Movement and Population Ecology: PROGRAM
+# Dealing with Spatio-Temporal Data in Movement and Population Ecology: PROGRAM
 
 ## 0. Introduction to Data Management (Cagnacci & Urbano, 2 h)
 ### 0.1 BASIC CONCEPTS
 * 0.1.1 Introduction to spatial objects in animal ecology [Cagnacci, 1 hour]
 * 0.1.2 Introduction to Data Management and Spatial Database [Urbano, 30 minutes] 
  
-### 0.2 PRELIMINARY STEPS
-* 0.2.1 Installation of PostgreSQL/PostGIS and PgAdmin [?, 0.5 hours]
-
+### 0.2 PRELIMINARY STEPS (?, 30 minutes)
+* 0.2.1 Installation of PostgreSQL/PostGIS and PgAdmin 
+* 0.2.2 Connection to the database mpe_db
+* 
 ## 1. SQL and Spatial SQL (Urbano + ?, 6 h)
 ### 1.1 WORKING WITH SQL 
 * 1.1.1 Introduction to SQL
@@ -15,7 +16,7 @@
 * 1.1.3 Schemas, tables, data types
 * 1.1.4 SELECT, FROM, WHERE
 * 1.1.5 AND, OR, IN, !=, NULL
-* 1.1.6 ORDER BY and LIMIT
+* 1.1.6 ORDER BY, LIMIT, DISTINCT
 * 1.1.7 LIKE
 * 1.1.8 GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)
 * 1.1.9 HAVING

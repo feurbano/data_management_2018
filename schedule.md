@@ -6,7 +6,7 @@
 12.30-14.00: Lunch<br>
 14.00-15.00: Introduction to spatial objects in animal ecology (Cagnacci)<br>
 15.00-15.30: Introduction to Data Management and Spatial Database (Urbano)<br>
-15.30-16.00: Installation of PostgreSQL/PostGIS and PgAdmin (?)<br>
+15.30-16.00: Installation of PostgreSQL/PostGIS and connection to a db (?)<br>
 16.30-16.30: Coffee break<br>
 16.30-18.30: SQL and Spatial SQL (Urbano, ?)<br>
 18.30-19.00: Science Happy Hour: Flash talks from students, in presence of experts<br>

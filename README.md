@@ -13,3 +13,5 @@ This repository stores the lessons and presentations of the course **Dealing wit
 * Section 7: **[RSA in Movement and Population Ecology](https://github.com/feurbano/data_management_2018/tree/master/sections/section_7)**
 * Section 8: **[Special topics](https://github.com/feurbano/data_management_2018/tree/master/sections/section_8)**
 * **[Flash talks from students](https://github.com/feurbano/data_management_2018/tree/master/sections/flash_talks)**
+
+The material reported in these lessons has been created by Ferdinando Urbano, Francesca Cagnacci, Mattieu Basille and David Bucklin.
