@@ -87,7 +87,7 @@
 ### 5.1 FIRST SCIENTIFIC QUESTION 
 * 5.1.1 Analysis step 1 [...]
 * 5.1.2 Analysis step 2 [...]
-* 
+
 ### 5.2 SECOND SCIENTIFIC QUESTION 
 * 5.2.1 Analysis step 1 [...]
 * 5.2.2 Analysis step 2 [...]
@@ -101,7 +101,7 @@
 * 6.2.1 Analysis step 1 [...]
 * 6.7.2 Analysis step 2 [...]
 
-## 7. Resource Selection Analysis in Movement and Population Ecology (Van Loon, 4 h)
+## 7. RSA in Movement and Population Ecology (Van Loon, 4 h)
 ### 7.1 THEORY [...] 
 * 7.1.1 Step 1
 * 7.1.2 Step 2
