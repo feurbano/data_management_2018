@@ -44,7 +44,7 @@
 10.00-10.30: Coffee break<br>
 10.30-12.30: Population Ecology Data Analysis (Basille)<br>
 12.30-13.30: Lunch<br>
-13.30-14.00: From population data to spatial modelling (Nilsen)<br>
+13.30-14.00: From population data to spatial modelling (Nilsen) -> to be extended to 2h<br>
 14.00-16.00: Movement Ecology Data Analysis (Basille)<br>
 16.00-16.30: Coffee break<br>
 16.30-18.30: Movement Ecology Data Analysis (Basille)<br>
@@ -53,9 +53,9 @@
 </tr> 
 <tr><td>Friday, 22th June</td> 
 <td>
-08.00-10.00: RSA in Movement and Population Ecology (Van Loon<br>
+08.00-10.00: RSA in Movement and Population Ecology (Van Loon)<br>
 10.00-10.30: Coffee break<br>
-10.30-12.30: RSA in Movement and Population Ecology (Van Loon<br>
+10.30-12.30: RSA in Movement and Population Ecology (Van Loon)<br>
 12.30-13.30: Lunch<br>
 13.30-14.00: Data sharing and Data standards for a better Science (Davidson)<br>
 14.00-15.00: Introduction to spatial objects in animal ecology (Cagnacci)<br>

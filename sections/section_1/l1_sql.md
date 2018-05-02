@@ -1,15 +1,22 @@
+# 1. SQL and Spatial SQL
 ## 1.1 WORKING WITH SQL
 This lesson introduces students to SQL and illustrates the main command that are needed to interact with a database. Each command is described then an example shows how it works. At the end, an exercise is used to let students experiment it by themselves. At the end of the lesson, you will be able to get data from the database specifying criteria to retrieve the desired subset of records.
 
 ### 1.1.1 Introduction to SQL
 The state-of-the-art technical tool for effectively and efficiently managing movement and population ecology data is the spatial relational database management systems (*SRDBMS* for short). Using databases to manage data implies a considerable effort for those who are not already familiar with these tools, but this is necessary to be able to deal with the large and/or complex data sets in a multi-user context where errors in data might be critical and data can be re-used many times for different projects, including in the long term. Moreover, the time spent to learn databases will be largely paid back with the time saved for the management and processing of the data. 
 
-*SQL*, which stands for *Structured Query Language* is a way for interacting with SRDBMS. SQL statements are used to perform tasks such as update data on a database, create database object or retrieve data from a database. In this lesson we will focus on data retrieval from an existing database. SQL is highly standardized and while each database platform has some kind of SQL dialect, once learnt SQL can be used with any SRDBMS tool (e.g. PostgreSQL [used during this course], MySQL, ORACLE, SQLServer, SQLite, SpatiaLite).
+*SQL*, which stands for *Structured Query Language* is a way for interacting with SRDBMS. SQL statements are used to perform tasks such as update data on a database, create database object or retrieve data from a database. In this lesson we will focus on data retrieval from an existing database. SQL is highly standardized and while each database platform has some kind of SQL dialect, once learnt SQL can be used with any SRDBMS tool (e.g. PostgreSQL [used during this course], MySQL, ORACLE, SQLServer, SQLite, SpatiaLite). While complex queries can be hard to design, SQL itself is a simple language that combines a very limited sets of commands in a way that is similar to the natural language.
 
-While complex queries can be hard to write, SQL is a simple language that combines a very limited sets of commands in a way that is pretty similar to the natural language.
+The reference software platform used is the open source PostgreSQL with its spatial extension PostGIS. The reference (graphical) interface used to deal with the database
+is [pgAdmin3](http://www.pgadmin.org/). All the examples provided (SQL code) and technical solutions proposed are tuned on this software, although most of the code can be easily adapted for other platforms.
+
+
 
 ### 1.1.2 Overview of the database used for the exercises
 [...]
+data content
+connection parameters
+
 ### 1.1.3 Schemas, tables, data types
 The basic structure of a database is called a *table*. As you would expect it is composed of columns and rows, but unlike what happens in Excel or Calc, you cannot put whatever you want in it. A table is declaratively created with a structure: each column has a defined *type* of data, and the rows (also called *records*) must respect this type: the system enforces this constraint, and does not allow the wrong kind of data to slip in. Each data type has specific properties and functions associated. You will see how to create a table in sections 2 and 3, when you will create your own database.
 

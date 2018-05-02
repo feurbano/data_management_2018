@@ -58,9 +58,9 @@
 ## 3. Movement Ecology Data Management (Urbano, 6 h)
 ### 3.1 SETTING UP THE MOVEMENT ECOLOGY DATABASE
 * 3.1.1 Introduction to the goals and the data sets used for the study case on Movement Ecology Data
-* 3.1.2 Managing and modelling information on animals and sensors
-* 3.1.3 Import data into the database
-* 3.1.4 Create keys, indices and domains
+* 3.1.2 Import data into the database
+* 3.1.3 Create keys, indices and domains
+* 3.1.4 Managing and modelling information on animals and sensors 
 * 3.1.5 From data to information: associating locations to animals
 * 3.1.6 Manage the location data in a spatial database
 * 3.1.7 From locations to trajectories and home ranges
