@@ -24,6 +24,7 @@
 * 1.1.11 LEFT JOIN
 * 1.1.12 Nested queries
 * 1.1.13 WINDOW functions
+* 1.1.14 INSERT, UPDATE, DELETE
 
 ### 1.2 WORKING WITH SPATIO-TEMPORAL SQL
 * 1.2.1 Temporal data (date, time, timezone), EXTRACT
@@ -39,7 +40,7 @@
 
 ## 2. Population Ecology Data Management (Urbano, 6 h)
 ### 2.1 SETTING UP THE POPULATION ECOLOGY DATABASE 
-* 2.1.1 Introduction to the goals and the data sets used for the study case on Population Ecology Data
+* 2.1.1 Introduction to the goals and the datasets
 * 2.1.2 From Field Data to a Spatial Database: how to deal with data
 * 2.1.3 Review of the raw data and identification of errors and outliers in the original spreadsheets
 * 2.1.4 Move to a database: database data model
@@ -57,16 +58,18 @@
 
 ## 3. Movement Ecology Data Management (Urbano, 6 h)
 ### 3.1 SETTING UP THE MOVEMENT ECOLOGY DATABASE
-* 3.1.1 Introduction to the goals and the data sets used for the study case on Movement Ecology Data
-* 3.1.2 Import data into the database
-* 3.1.3 Create keys, indices and domains
+* 3.1.1 Introduction to the goals and the datasets
+* 3.1.2 Create a db and import data
+* 3.1.3 Create acquisition timestamps, indexes and permissions
 * 3.1.4 Managing and modelling information on animals and sensors 
 * 3.1.5 From data to information: associating locations to animals
 * 3.1.6 Manage the location data in a spatial database
 * 3.1.7 From locations to trajectories and home ranges
 * 3.1.8 Integrating spatial ancillary information: land cover
 * 3.1.9 Data quality: how to detect and manage outliers
-* 3.1.10 Raster Data in PostGIS (demo)
+* 3.1.10 Data export and maintenance
+* 3.1.11 Raster Data in PostGIS (demo)
+* 
 
 ### 3.2 MOVEMENT ECOLOGY: EXERCISES WITH SQL AND SPATIAL SQL 
 * 3.2.1 Exercise 1: Calculate number of locations per animal per month
