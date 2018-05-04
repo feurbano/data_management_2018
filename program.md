@@ -76,7 +76,7 @@
 * 3.3.2 Analysis step 2 (...)
 * 3.3.n Analysis step n (...)
 
-# 4. From Population Data to Spatial Modelling (Nilsen, 4 h)
+## 4. From Population Data to Spatial Modelling (Nilsen, 4 h)
 ### 4.1 THEORY (...)
 * 4.1.1 Step 1
 * 4.1.2 Step 2
