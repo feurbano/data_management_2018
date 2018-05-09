@@ -5,13 +5,11 @@ This repository stores the lessons and presentations of the course **Dealing wit
 * **[Schedule](https://github.com/feurbano/data_management_2018/blob/master/schedule.md)**
 * Section 0: **[Introduction to Data Management](https://github.com/feurbano/data_management_2018/tree/master/sections/section_0)**
 * Section 1: **[SQL and Spatial SQL](https://github.com/feurbano/data_management_2018/tree/master/sections/section_1)**
-* Section 2: **[Population Ecology Data Management](https://github.com/feurbano/data_management_2018/tree/master/sections/section_2)**
-* Section 3: **[Movement Ecology Data Management](https://github.com/feurbano/data_management_2018/tree/master/sections/section_3)**
-* Section 4: **[Introductions to Data analysis in R](https://github.com/feurbano/data_management_2018/tree/master/sections/section_4)**]
-* Section 5: **[Population Ecology Data Analysis](https://github.com/feurbano/data_management_2018/tree/master/sections/section_5)**
-* Section 6: **[Movement Ecology Data Analysis](https://github.com/feurbano/data_management_2018/tree/master/sections/section_6)**
-* Section 7: **[RSA in Movement and Population Ecology](https://github.com/feurbano/data_management_2018/tree/master/sections/section_7)**
-* Section 8: **[Special topics](https://github.com/feurbano/data_management_2018/tree/master/sections/section_8)**
+* Section 2: **[Movement Ecology Data Management](https://github.com/feurbano/data_management_2018/tree/master/sections/section_2)**
+* Section 3: **[Movement Ecology Data Analysis in R](https://github.com/feurbano/data_management_2018/tree/master/sections/section_3)**
+* Section 4: **[From Population Data to Spatial Modelling](https://github.com/feurbano/data_management_2018/tree/master/sections/section_4)**
+* Section 5: **[RSA in Movement Population Ecology](https://github.com/feurbano/data_management_2018/tree/master/sections/section_5)**
+* Section 6: **[Special topics](https://github.com/feurbano/data_management_2018/tree/master/sections/section_6)**
 * **[Flash talks from students](https://github.com/feurbano/data_management_2018/tree/master/sections/flash_talks)**
 
 The material reported in these lessons has been created by Ferdinando Urbano, Francesca Cagnacci, Mattieu Basille and David Bucklin.
