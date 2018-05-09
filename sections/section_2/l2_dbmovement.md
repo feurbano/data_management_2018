@@ -294,7 +294,7 @@ If you have tables that change frequently and others that remain unchanged for l
 ### 2.1.12 Raster data in PostGIS (demo)
 The advancement in movement ecology from a data perspective can reach its full potential only by combining the technology of animal tracking with the technology of other environmental sensing programmes. Ecology is fundamentally spatial, and animal ecology is obviously no exception. Any scientific question in animal ecology cannot overlook the dynamic interaction between individual animals or populations, and the environment in which the ecological processes occur. Movement provides the mechanistic link to explain this complex ecosystem interaction, as the movement path is dynamically determined by external factors, through their effect on the individual's state and the life-history characteristics of an animal. Therefore, most modelling approaches for animal movement include environmental factors as explanatory variables.  
 
-RASTER IN POSTGIS
+> RASTER IN POSTGIS
 
 #### DEMONSTRATION 1: Analyzing movement data with a (raster) environmental layer
 In these examples we will explore some simple analysis performed with spatial SQL into our GPS tracking with **land cover/use data** derived from [CORINE land cover database](https://land.copernicus.eu/pan-european/corine-land-cover) (as a static raster layer). 
@@ -349,7 +349,8 @@ FROM
 ```sql
 SELECT AddRasterConstraints('env_data'::name, 'land_cover_export'::name, 'rast'::name);
 ```
-Export with GDAL_translate
+Export with GDAL_translate  
+
 `gdal_translate -of GTIFF "PG:host=eurodeer2.fmach.it dbname=eurodeer_db user='postgres' schema=env_data table=land_cover_export mode=2" C:\Users\User\Desktop\landcover\land_cover.tif`
 
 Remove the unioned table
@@ -535,18 +536,222 @@ ORDER BY
 
 #### DEMONSTRATION 2: Analyzing location data with a time series of environmental layers
 
+Animal locations are not only spatial, but are fully defined by spatial and temporal coordinates (as given by the acquisition time). Logically, the same temporal definition also applies to environmental layers. Some characteristics of the landscape, such as land cover or road networks, can be considered static over a large period of time and these environmental layers are commonly intersected with animal locations to infer habitat use and selection by animals. However, many characteristics actually relevant to wildlife, such as vegetation biomass or road traffic, are indeed subject to temporal variability (on the order of hours to weeks) in the landscape, and would be better represented by dynamic layers that correspond closely to the conditions actually encountered by an animal moving across the landscape. Nowadays, satellite-based remote sensing can provide high temporal resolution global coverage of medium/high-resolution images that can be used to compute a large number of environmental parameters very useful to wildlife studies. One of the most common set of environmental data time series is the Normalized Difference Vegetation Index (NDVI), but other examples include data sets on snow, ocean primary productivity, surface temperature, or salinity. Snow cover, NDVI, and sea surface temperature are some examples of indexes that can be used as explanatory variables in statistical models or to parametrize bayesian inferences or mechanistic models. The main shortcoming of such remote-sensing layers is the relatively low spatial and/or temporal resolution, which does not fit the current average bias of wildlife-tracking GPS locations (less than 20 m) and temporal scale of animal movement, thus potentially leading to a mismatch between the animal-based information and the environmental layers (note that the resolution can still be perfectly fine, depending on the overall spatial and temporal variability and the species and biological process under study). Higher-resolution images and new types of information (e.g. forest structure) are presently provided by new types of sensors, such as those from lidar, radar, or hyper-spectral remote-sensing technology and Sentinel 2 (optical data). The new generation of satellites requires dedicated storage and analysis tools (e.g. Goggle Earth Engine) that can be related to the Big Data framework. 
+Here, we will explore some simple example of spatio-temporal analyses that involve the interaction between GPS data and NDVI time series.
 
+The MODIS (Moderate Resolution Imaging Spectroradiometer) instrument operates on the NASA's Terra and Aqua spacecraft. The instrument views the entire earth surface every 1 to 2 days, captures data in 36 spectral bands ranging in wavelength from 0.4 μm to 14.4 μm and at varying spatial resolutions (250 m, 500 m and 1 km). The Global MODIS vegetation indices (code MOD13Q1) are designed to provide consistent spatial and temporal comparisons of vegetation conditions. Red and near-infrared reflectances, centred at 645 nm and 858 nm, respectively, are used to determine the daily vegetation indices, including the well known NDVI. This index is calculated by contrasting intense chlorophyll pigment absorption in the red against the high reflectance of leaf mesophyll in the near infrared. It is a proxy of plant photosynthetic activity and has been found to be highly related to green leaf area index (LAI) and to the fraction of photosynthetically active radiation absorbed by vegetation (FAPAR). Past studies have demonstrated the potential of using NDVI data to study vegetation dynamics. More recently, several applications have been developed using MODIS NDVI data such as land-cover change detection, monitoring forest phenophases, modelling wheat yield, and other applications in forest and agricultural sciences. However, the utility of the MODIS NDVI data products is limited by the availability of high-quality data (e.g. cloud-free), and several processing steps are required before using the data: acquisition via web facilities, re-projection from the native sinusoidal projection to a standard latitude-longitude format, eventually the mosaicking of two or more tiles into a single tile. A number of processing techniques to 'smooth' the data and obtain a cleaned (no clouds) time series of NDVI imagery have also been implemented. These kind of processes are usually based on a set of ancillary information on the data quality of each pixel that are provided together with MODIS NDVI.
 
+NDVI data source used in these exercises: MODIS NDVI (http://modis-land.gsfc.nasa.gov/vi.html), in a version (smoothed, weekly) downloaded from [Boku University Portal](http://ivfl-info.boku.ac.at/index.php/eo-data-processing).
 
+##### Import MODIS NDVI time series *(only example, not run)*
 
+`raster2pgsql.exe -C -r -t 128x128 -F -M -R -N -3000 C:/tracking_db/data/env_data/raster/MOD*.tif demo_florida.ndvi_modis | psql.exe -d eurodeer_db -U postgres -p 5432`
 
+Meaning of raster2pgsql parameters
+* -R: out of db raster
+* -F: add a column with the name of the file
+* -N: set the null value
 
+##### Create and fill a field to explicitly mark the reference date of the images
+Structure of the name of the original file: *MCD13Q1.A2005003.005.250m_7_days_NDVI.REFMIDw.tif*
+```sql
+ALTER TABLE demo_florida.ndvi_modis ADD COLUMN acquisition_date date;
+UPDATE 
+  demo_florida.ndvi_modis 
+SET 
+  acquisition_date = to_date(substring(filename FROM 10 FOR 7), 'YYYYDDD');
+```
+```sql
+CREATE INDEX ndvi_modis_referemce_date_index
+  ON demo_florida.ndvi_modis
+  USING btree
+  (acquisition_date);
+```
+##### Create a table from an existing DB layer with a larger - MODIS NDVI
+```sql
+CREATE TABLE demo_florida.modis_ndvi(
+  rid serial PRIMARY KEY,
+  rast raster,
+  filename text,
+  acquisition_date date);
+```
+```sql
+INSERT INTO demo_florida.modis_ndvi (rast, filename, acquisition_date)
+SELECT 
+  rast, 
+  filename, 
+  acquisition_date
+FROM
+  env_data_ts.ndvi_modis_boku, 
+  main.study_areas
+WHERE 
+  st_intersects(rast, ST_Expand(geom, 0.05)) AND 
+  study_areas_id = 1;
+```
+```sql
+SELECT AddRasterConstraints('demo_florida'::name, 'modis_ndvi'::NAME, 'rast'::name);
+```
+```sql
+CREATE INDEX modis_ndvi_rast_idx 
+  ON demo_florida.modis_ndvi
+  USING GIST (ST_ConvexHull(rast));
+```
+```sql
+CREATE INDEX modis_ndvi_referemce_date_index
+  ON demo_florida.modis_ndvi
+  USING btree
+  (acquisition_date);
+```
 
+##### Extraction of a NDVI value for a point/time
+```sql
+WITH pointintime AS 
+(
+SELECT 
+  ST_SetSRID(ST_MakePoint(11.1, 46.1), 4326) AS geom, 
+  '2005-01-03'::date AS reference_date
+)
+SELECT 
+  ST_Value(rast, geom) * 0.0048 -0.2 AS ndvi
+FROM 
+  demo_florida.modis_ndvi,
+  pointintime
+WHERE 
+  ST_Intersects(geom, rast) AND
+  modis_ndvi.acquisition_date = pointintime.reference_date;
+```
 
+##### Extraction of a NDVI time series of values of a given fix
+```sql
+SELECT 
+  ST_X(geom) AS x,
+  ST_Y(geom) AS y,
+  acquisition_date,
+  ST_Value(rast, geom) * 0.0048 -0.2 AS ndvi
+FROM 
+  demo_florida.modis_ndvi,
+  demo_florida.gps_data_animals
+WHERE 
+  ST_Intersects(geom, rast) AND
+  gps_data_animals_id = 1
+ORDER BY 
+  acquisition_date;
+```
 
+##### Extraction of the NDVI value for a fix as temporal interpolation of the 2 closest images
+```sql
+SELECT 
+  gps_data_animals_id, 
+  acquisition_time,
+  DATE_TRUNC('week', acquisition_time::date)::date,
+  (trunc(
+    (
+    ST_VALUE(pre.rast, geom) * 
+    (DATE_TRUNC('week', acquisition_time::date + 7)::date - acquisition_time::date)::integer 
+    +
+    ST_VALUE(post.rast, geom) * 
+    (acquisition_time::date - DATE_TRUNC('week', acquisition_time::date)::date))::integer/7)
+    ) * 0.0048 -0.2 AS ndvi
+FROM  
+  demo_florida.gps_data_animals,
+  demo_florida.modis_ndvi AS pre,
+  demo_florida.modis_ndvi AS post
+WHERE
+  ST_INTERSECTS(geom, pre.rast) AND 
+  ST_INTERSECTS(geom, post.rast) AND 
+  DATE_TRUNC('week', acquisition_time::date)::date = pre.acquisition_date AND 
+  DATE_TRUNC('week', acquisition_time::date + 7)::date = post.acquisition_date AND
+  gps_validity_code = 1 AND
+  gps_data_animals_id = 2;
+```
+
+##### Extraction of the NDVI values for a set of fixes as temporal interpolation of the 2 closest images for animal 782
+```sql
+SELECT 
+  gps_data_animals_id, 
+  ST_X(geom)::numeric (8,5) AS x,
+  ST_Y(geom)::numeric (8,5) AS y,
+  acquisition_time,
+  DATE_TRUNC('week', acquisition_time::date)::date,
+  (trunc(
+    (
+    ST_VALUE(pre.rast, geom) * 
+    (DATE_TRUNC('week', acquisition_time::date + 7)::date - acquisition_time::date)::integer 
+    +
+    ST_VALUE(post.rast, geom) * 
+    (acquisition_time::date - DATE_TRUNC('week', acquisition_time::date)::date))::integer/7)
+    ) * 0.0048 -0.2
+FROM  
+  demo_florida.gps_data_animals,
+  demo_florida.modis_ndvi AS pre,
+  demo_florida.modis_ndvi AS post
+WHERE
+  ST_INTERSECTS(geom, pre.rast) AND 
+  ST_INTERSECTS(geom, post.rast) AND 
+  DATE_TRUNC('week', acquisition_time::date)::date = pre.acquisition_date AND 
+  DATE_TRUNC('week', acquisition_time::date + 7)::date = post.acquisition_date AND
+  gps_validity_code = 1 AND
+  animals_id = 782
+ORDER by 
+  acquisition_time;
+```
+
+##### Calculate average, max and min NDVI for the minimum convex hull of a every month for animal 782
+```sql
+SELECT
+  months, 
+  (stats).mean  * 0.0048 - 0.2 AS ndvi_avg,
+  (stats).min * 0.0048 - 0.2 AS ndvi_min,
+  (stats).max * 0.0048 - 0.2 AS ndvi_max
+FROM
+( 
+  SELECT
+    months,
+    ST_SummaryStats(ST_UNION(ST_CLIP(rast,geom), 'max'))  AS stats
+  FROM 
+    demo_florida.view_convexhull_monthly,
+    demo_florida.modis_ndvi
+  WHERE
+    ST_INTERSECTS (rast, geom) AND 
+    EXTRACT(month FROM acquisition_date) = months AND
+    months IN (1,2,3)
+  GROUP BY months
+  ORDER BY months
+) a;
+```
+
+##### Calculate time series of average, max and min NDVI for a given polygon in a given time interval
+```sql 
+WITH selected_area AS 
+(SELECT st_setsrid(ST_MakePolygon(ST_GeomFromText('LINESTRING(11.03 45.98, 11.03 46.02, 11.08 46.02, 11.08 45.98, 11.03 45.98)')), 4326) AS geom)
+SELECT
+  acquisition_date, 
+  ((stats).mean  * 0.0048 - 0.2)::numeric (4,3)  AS ndvi_avg,
+  ((stats).min * 0.0048 - 0.2)::numeric (4,3)  AS ndvi_min,
+  ((stats).max * 0.0048 - 0.2)::numeric (4,3) AS ndvi_max,
+  ((stats).stddev)::numeric (6,3) AS digital_value_stddev,
+  ((stats).count) AS num_pixels
+FROM
+( 
+  SELECT
+    acquisition_date,
+    ST_SummaryStats(ST_UNION(ST_CLIP(rast,geom)))  AS stats
+  FROM 
+    selected_area,
+    demo_florida.modis_ndvi
+  WHERE
+    ST_INTERSECTS (rast, geom) AND 
+    acquisition_date > '1/1/2017' and acquisition_date < '30/6/2017'
+  GROUP BY acquisition_date
+  ORDER BY acquisition_date
+) a;
+```
 
 ### 2.1.13 Deal with data collected on the field (demo)
-While data generated by a sensor are usually "clean" (i.e. no errors are expected in the data format), when you have to import data processed by an operator (e.g. survey data collected on the field, recorded on paper sheets and then digitalized in a spreadsheet) you always find many errors that prevent you to import it in a (properly formatted) database table. Typical examples are notes written in a field that should be numeric (e.g. "7, but I am not sure" or ">7" related to the number of individuals observed); date and time written in a strange format or automatically converted to number by the spreadsheet tool.
-In general, there are many errors that must be fixed in these data sets (e.g. cell coloured in yellow with no explanation of what it means, numbers out of range, measures related to a survey with a date that not correspond to that of the survey, coordinates out of the study area, name of species not consistently used throughout the same data sets, valuable information not properly coded but left as notes, and many others with no limits to creativity...).
-In this case, before data are properly structured and stored in a database, the errors must be identified and corrected. This requires a reiterated exchange of information with they who collected the data and . The creation of a database from a dataset collected on the field is a very good opportunities to clean it as the database rejects inconsistency that can be easily found and fixed.
+
+> revise and then look for a practical example
+
+While data generated by a sensor are usually "clean" (i.e. no errors are expected in the data format), when you have to import data processed by an operator (e.g. survey data collected on the field, recorded on paper sheets and then digitalized in a spreadsheet) you always find many errors that prevent you to import it in a (properly formatted) database table. Typical examples are notes written in a field that should be numeric (e.g. "7, but I am not sure" or ">7" related to the number of individuals observed); date and time written in a strange format or automatically converted to number by the spreadsheet tool.  
+In general, there are many errors that must be fixed in these data sets (e.g. cell coloured in yellow with no explanation of what it means, numbers out of range, measures related to a survey with a date that not correspond to that of the survey, coordinates out of the study area, name of species not consistently used throughout the same data sets, valuable information not properly coded but left as notes, and many others with no limits to creativity...).  
+In this case, before data are properly structured and stored in a database, the errors must be identified and corrected. This requires a reiterated exchange of information with they who collected the data and . The creation of a database from a dataset collected on the field is a very good opportunities to clean it as the database rejects inconsistency that can be easily found and fixed.  
 From an operational point of view, data cleaning can be done directly on the spreadsheet, or in any other tool (e.g. R). Once you become familiar with database and SQL, you will see that a very effective and efficient way to screen data and fix problem is to import data in a database with all fields in text format (so no *a priori* checks are done on the data) and that processed using the tools offered by the database.
