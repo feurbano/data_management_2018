@@ -273,7 +273,9 @@ A very popular graphical tool to represent a data model is the [Entity-Relations
 
 In the figure below, it is illustrated the schema of the database structure created at the end of this and the next lessons.
 
-![schema-db](https://github.com/feurbano/data_management_2018/tree/master/sections/section_2/schema-db.png)
+<p align="center">
+<img src="https://github.com/feurbano/data_management_2018/tree/master/sections/section_2/schema-db.png" Height="250"/>
+</p>
 
 ---
 to be continued
