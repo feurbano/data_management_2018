@@ -545,7 +545,7 @@ NDVI data source used in these exercises: MODIS NDVI (http://modis-land.gsfc.nas
 
 ##### Import MODIS NDVI time series *(only example, not run)*
 
-`raster2pgsql.exe -C -r -t 128x128 -F -M -R -N -3000 C:/tracking_db/data/env_data/raster/MOD*.tif demo_florida.ndvi_modis | psql.exe -d eurodeer_db -U postgres -p 5432`
+`raster2pgsql.exe -C -r -t 128x128 -F -M -R -N -3000 C:/tracking_db/data/env_data/raster/MOD*.tif env_data.ndvi_modis | psql.exe -d eurodeer_db -U postgres -p 5432`
 
 Meaning of raster2pgsql parameters
 * -R: out of db raster
@@ -555,28 +555,28 @@ Meaning of raster2pgsql parameters
 ##### Create and fill a field to explicitly mark the reference date of the images
 Structure of the name of the original file: *MCD13Q1.A2005003.005.250m_7_days_NDVI.REFMIDw.tif*
 ```sql
-ALTER TABLE demo_florida.ndvi_modis ADD COLUMN acquisition_date date;
+ALTER TABLE env_data.ndvi_modis ADD COLUMN acquisition_date date;
 UPDATE 
-  demo_florida.ndvi_modis 
+  env_data.ndvi_modis 
 SET 
   acquisition_date = to_date(substring(filename FROM 10 FOR 7), 'YYYYDDD');
 ```
 ```sql
 CREATE INDEX ndvi_modis_referemce_date_index
-  ON demo_florida.ndvi_modis
+  ON env_data.ndvi_modis
   USING btree
   (acquisition_date);
 ```
 ##### Create a table from an existing DB layer with a larger - MODIS NDVI
 ```sql
-CREATE TABLE demo_florida.modis_ndvi(
+CREATE TABLE env_data.modis_ndvi(
   rid serial PRIMARY KEY,
   rast raster,
   filename text,
   acquisition_date date);
 ```
 ```sql
-INSERT INTO demo_florida.modis_ndvi (rast, filename, acquisition_date)
+INSERT INTO env_data.modis_ndvi (rast, filename, acquisition_date)
 SELECT 
   rast, 
   filename, 
@@ -589,16 +589,16 @@ WHERE
   study_areas_id = 1;
 ```
 ```sql
-SELECT AddRasterConstraints('demo_florida'::name, 'modis_ndvi'::NAME, 'rast'::name);
+SELECT AddRasterConstraints('env_data'::name, 'modis_ndvi'::NAME, 'rast'::name);
 ```
 ```sql
 CREATE INDEX modis_ndvi_rast_idx 
-  ON demo_florida.modis_ndvi
+  ON env_data.modis_ndvi
   USING GIST (ST_ConvexHull(rast));
 ```
 ```sql
 CREATE INDEX modis_ndvi_referemce_date_index
-  ON demo_florida.modis_ndvi
+  ON env_data.modis_ndvi
   USING btree
   (acquisition_date);
 ```
@@ -614,7 +614,7 @@ SELECT
 SELECT 
   ST_Value(rast, geom) * 0.0048 -0.2 AS ndvi
 FROM 
-  demo_florida.modis_ndvi,
+  env_data.modis_ndvi,
   pointintime
 WHERE 
   ST_Intersects(geom, rast) AND
@@ -629,8 +629,8 @@ SELECT
   acquisition_date,
   ST_Value(rast, geom) * 0.0048 -0.2 AS ndvi
 FROM 
-  demo_florida.modis_ndvi,
-  demo_florida.gps_data_animals
+  env_data.modis_ndvi,
+  env_data.gps_data_animals
 WHERE 
   ST_Intersects(geom, rast) AND
   gps_data_animals_id = 1
@@ -653,9 +653,9 @@ SELECT
     (acquisition_time::date - DATE_TRUNC('week', acquisition_time::date)::date))::integer/7)
     ) * 0.0048 -0.2 AS ndvi
 FROM  
-  demo_florida.gps_data_animals,
-  demo_florida.modis_ndvi AS pre,
-  demo_florida.modis_ndvi AS post
+  env_data.gps_data_animals,
+  env_data.modis_ndvi AS pre,
+  env_data.modis_ndvi AS post
 WHERE
   ST_INTERSECTS(geom, pre.rast) AND 
   ST_INTERSECTS(geom, post.rast) AND 
@@ -682,9 +682,9 @@ SELECT
     (acquisition_time::date - DATE_TRUNC('week', acquisition_time::date)::date))::integer/7)
     ) * 0.0048 -0.2
 FROM  
-  demo_florida.gps_data_animals,
-  demo_florida.modis_ndvi AS pre,
-  demo_florida.modis_ndvi AS post
+  env_data.gps_data_animals,
+  env_data.modis_ndvi AS pre,
+  env_data.modis_ndvi AS post
 WHERE
   ST_INTERSECTS(geom, pre.rast) AND 
   ST_INTERSECTS(geom, post.rast) AND 
@@ -709,8 +709,8 @@ FROM
     months,
     ST_SummaryStats(ST_UNION(ST_CLIP(rast,geom), 'max'))  AS stats
   FROM 
-    demo_florida.view_convexhull_monthly,
-    demo_florida.modis_ndvi
+    env_data.view_convexhull_monthly,
+    env_data.modis_ndvi
   WHERE
     ST_INTERSECTS (rast, geom) AND 
     EXTRACT(month FROM acquisition_date) = months AND
@@ -738,7 +738,7 @@ FROM
     ST_SummaryStats(ST_UNION(ST_CLIP(rast,geom)))  AS stats
   FROM 
     selected_area,
-    demo_florida.modis_ndvi
+    env_data.modis_ndvi
   WHERE
     ST_INTERSECTS (rast, geom) AND 
     acquisition_date > '1/1/2017' and acquisition_date < '30/6/2017'
