@@ -40,7 +40,7 @@
 * 1.2.10 Visualize spatial data in QGIS
 
 ## 2. Movement Ecology Data Management (Urbano, 10 h)
-### 2.1 SETTING UP THE MOVEMENT ECOLOGY DATABASE
+### 2.1 SETTING UP THE DATABASE
 * 2.1.1 Introduction to the goals and the datasets
 * 2.1.2 Create a db and import sensor data
 * 2.1.3 Create acquisition timestamps, indexes and permissions
