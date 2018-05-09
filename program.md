@@ -10,7 +10,7 @@
 * 0.2.2 Connection to the database tracking_db
 * 0.2.3 Exploration of pgAdmin Interface
  
-## 1. SQL and Spatial SQL (Urbano + ?, 6 h)
+## 1. SQL and Spatial SQL (Urbano, 6 h)
 ### 1.1 WORKING WITH SQL 
 * 1.1.1 Introduction to SQL
 * 1.1.2 Overview of the database used for the exercises
@@ -42,7 +42,7 @@
 ## 2. Movement Ecology Data Management (Urbano, 10 h)
 ### 2.1 SETTING UP THE MOVEMENT ECOLOGY DATABASE
 * 2.1.1 Introduction to the goals and the datasets
-* 2.1.2 Create a db and import data
+* 2.1.2 Create a db and import sensor data
 * 2.1.3 Create acquisition timestamps, indexes and permissions
 * 2.1.4 Managing and modelling information on animals and sensors 
 * 2.1.5 From data to information: associating locations to animals
@@ -51,7 +51,9 @@
 * 2.1.8 Integrating spatial ancillary information: land cover
 * 2.1.9 Data quality: how to detect and manage outliers
 * 2.1.10 Data export and maintenance
-* 2.1.11 Raster Data in PostGIS (demo)
+* 2.1.11 Database maintenance
+* 2.1.12 Raster Data in PostGIS (demo)
+* 2.1.13 Deal with data collected on the field (demo)
 
 ### 2.2 EXERCISES WITH SQL AND SPATIAL SQL 
 * 2.2.1 Exercise 1: Calculate number of locations per animal per month
@@ -90,13 +92,13 @@
 * 5.1.1 Step 1
 * 5.1.2 Step 2
 
-### 4.2 EXERCISE (...) 
-* 4.2.1 Step 1
-* 4.2.2 Step 2
+### 5.2 EXERCISE (...) 
+* 5.2.1 Step 1
+* 5.2.2 Step 2
 
 
-## 5. Special Topics
-### 8.1 PRESENTATIONS (2 h)
-* 8.1.1 The Ecological Context Built from Satellites, including Sentinel (Rocchini, 30 minutes)
-* 8.1.2 Dealing with Acceleration Data (Berger, 30 minutes)
-* 8.1.3 Data sharing and Data Standards for a Better Science (Davidson, 30 minutes)
+## 6. Special Topics
+### 6.1 PRESENTATIONS (2 h)
+* 6.1.1 The Ecological Context Built from Satellites, including Sentinel (Rocchini, 30 minutes)
+* 6.1.2 Dealing with Acceleration Data (Berger, 30 minutes)
+* 6.1.3 Data sharing and Data Standards for a Better Science (Davidson, 30 minutes)
