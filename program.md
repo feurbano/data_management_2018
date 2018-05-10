@@ -48,7 +48,7 @@
 * 2.12 Recap exercises
 * 2.13 Raster Data in PostGIS (demo)
 * 2.14 Deal with data collected on the field (demo)
-
+* 2.15 Functions and triggers (supplementary material)
 
 ## 3. Movement Ecology Data Analysis with R (Basille, 6 h)
 * 3.1 Introduction to R

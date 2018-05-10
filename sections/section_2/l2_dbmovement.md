@@ -14,6 +14,7 @@
 * [2.12 Recap exercises](#c_2.12)
 * [2.13 Raster Data in PostGIS (demo)](#c_2.13)
 * [2.14 Deal with data collected on the field (demo)](#c_2.14)
+* [2.15 Functions and triggers (supplementary material)](#c_2.15)
 
 ## <a name="c_2.1"></a>2.1 Introduction to the goals and the data set
 Once a tracking project starts and sensors are deployed on animals, data begin to arrive (usually in the form of text files containing the raw information recorded by sensors). At this point, data must be handled by researchers. The aim of this exercise is to set up an operational database where GPS data coming from roe deer monitored in the Alps can be stored, managed and analysed. The information form the sensors must be complemented with other information on the individuals, deployments and surrounding environment to have a complete picture of the animals movement.
@@ -287,7 +288,7 @@ A very popular graphical tool to represent a data model is the **[Entity-Relatio
 In the figure below, it is illustrated the schema of the database structure created at the end of this and the next lessons.
 
 <p align="center">
-<img src="https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/images/schema-db.png" Height="400"/>
+<img src="https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/images/schema-db.png" Height="450"/>
 </p>
 
 ### Extend the database: data on sensors
@@ -526,13 +527,180 @@ WHERE
 
 
 ## <a name="c_2.5"></a>2.5 From data to information: associating locations to animals
+When position data are received from GPS sensors, they are not explicitly associated with any animal. Linking GPS data to animals is a key step in the data management process. This can be achieved using the information on the deployments of GPS sensors on animals (when sensors started and ceased to be deployed on the animals). In the case of a continuous data flow, the transformation of GPS positions into animal locations must be automated in order to have GPS data imported and processed in real-time. In this lesson, you extend the database with two new tables, *gps\_sensors\_animals* and *gps\_data\_animals*. As additional material, a set of dedicated database triggers and functions is presented that add tools to automatically manage the association of GPS positions with animals.
+
+
+### Storing information on GPS sensor deployments on animals
+To associate a positions to animals, you need the information on deployments, i.e. the time interval when a defined animal is wearing a specific tag. This information is also needed to exclude the positions recorded when a sensor was not deployed on any animal. The key point is to integrate into the database the information on the deployment of sensors on animals in a dedicated table. The design of the table structure must take into consideration that each animal can be monitored with multiple sensors (most likely at different times) and each sensor can be reused on multiple animals (no more than one at a time). This corresponds to a many-to-many relationship between animals and GPS sensors, where the main attribute is the time range: start and end of deployment (when the sensor is still deployed on the animal, the end of deployment can be set to null). Making reference to the case of GPS (but with a general validity), this information can be stored in a *gps\_sensors\_animals* table where the ID of the sensor, the ID of the animal, and the start and end timestamps of deployment are included. A possible solution to store the records that are associated with animals is to create a new table, which could be called *gps\_data\_animals*, where a list of derived fields can be eventually added to the basic animals ID, GPS sensors ID, acquisition time, and coordinates. This new table duplicates part of the information stored in the original *gps\_data table*, and the two tables must be kept synchronized. On the other hand, there are advantages of this database structure over alternative approaches with a single table (*gps\_data*) where all the original data from GPS sensors (including GPS positions not associated to animals) are also related to other information (e.g. the animal ID, environmental attributes, movement parameters):
+
+-   *gps\_data* cannot be easily synchronized with the data source if too many additional fields (i.e. calculated after data are imported into the database) are present in the table;
+-   if sensors from different vendors or different models of the same vendor are used, you might have file formats with a different set of fields: in this case it is complicated to merge all the information from each source in a single *gps\_data*table;
+-   in a table containing just those GPS positions associated with animals, performance improves because of the reduced number of records and fields (the fields not relevant for analysis, e.g. the list of satellites, can be kept only in the *gps\_data* table);
+-   with the additional *gps\_data\_animals* table, it is easier and more efficient to manage a system of tags to mark potential wrong locations and to share and disseminate the relevant information (you would lose the information on outliers if *gps\_data* is synchronized with the original data set, i.e. the text file from the sensors). In this course, we use the table *gps\_data* as an exact copy of raw data as they come from GPS sensors, while *gps\_data\_animals* is used to store and process the information that is used to monitor and study animals' movements. In a way,*gps\_data* is a 'system' table used as an intermediate step for the data import process. This approach is an example of possible database structure, but there is no best solution that fits all cases and a database for wildlife tracking data must be designed according to the specific data and requirements of each project.
+
+The first step to associating GPS positions with animals is to create a table to accommodate information on the deployment of GPS sensors on animals:
+
+```sql
+CREATE TABLE main.gps_sensors_animals(
+  gps_sensors_animals_id serial NOT NULL, 
+  animals_id integer NOT NULL, 
+  gps_sensors_id integer NOT NULL,
+  start_time timestamp with time zone NOT NULL, 
+  end_time timestamp with time zone,
+  notes character varying, 
+  insert_timestamp timestamp with time zone DEFAULT now(),
+  CONSTRAINT gps_sensors_animals_pkey 
+    PRIMARY KEY (gps_sensors_animals_id ),
+  CONSTRAINT gps_sensors_animals_animals_id_fkey 
+    FOREIGN KEY (animals_id)
+    REFERENCES main.animals (animals_id) 
+    MATCH SIMPLE ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT gps_sensors_animals_gps_sensors_id_fkey 
+    FOREIGN KEY (gps_sensors_id)
+    REFERENCES main.gps_sensors (gps_sensors_id) 
+    MATCH SIMPLE ON UPDATE NO ACTION ON DELETE CASCADE
+);
+```
+
+```sql
+COMMENT ON TABLE main.gps_sensors_animals
+IS 'Table that stores information of deployments of sensors on animals.';
+```
+
+ Now your table is ready to be populated. The general way of populating this kind of table is the manual entry of the information. In our case, you can use the test data set stored in the .csv file included in the test data set *\\tracking\_db\\data\\sensors\_animals\\gps\_sensors\_animals.csv*:
+
+```sql
+COPY main.gps_sensors_animals(
+  animals_id, gps_sensors_id, start_time, end_time, notes)
+FROM 
+  'C:\tracking_db\data\sensors_animals\gps_sensors_animals.csv' 
+  WITH (FORMAT csv, DELIMITER ';');
+```
+
+Once the values in this table are updated, you can use an SQL statement to obtain the id of the animal related to each GPS position. Here an example of a query to retrieve the codes of the animal and GPS sensor, the acquisition time and the coordinates (to make the query easier to read, aliases are used for the name of the tables):
+
+```sql
+SELECT 
+  deployment.gps_sensors_id AS sensor, 
+  deployment.animals_id AS animal,
+  data.acquisition_time, 
+  data.longitude::numeric(7,5) AS long, 
+  data.latitude::numeric(7,5) AS lat
+FROM 
+  main.gps_sensors_animals AS deployment,
+  main.gps_data AS data,
+  main.gps_sensors AS gps
+WHERE 
+  data.gps_sensors_code = gps.gps_sensors_code AND
+  gps.gps_sensors_id = deployment.gps_sensors_id AND
+  (
+    (data.acquisition_time >= deployment.start_time AND 
+     data.acquisition_time <= deployment.end_time)
+    OR 
+    (data.acquisition_time >= deployment.start_time AND 
+     deployment.end_time IS NULL)
+  )
+ORDER BY 
+  animals_id, acquisition_time
+LIMIT 5;
+```
+
+In the query, three tables are involved: *main.gps\_sensors\_animals*, *main.gps\_data*, and *main.gps\_sensors*. This is because in the *main.gps\_data*, where raw data from the sensors are stored, the *gps\_sensors\_id* is not present, thus the table *main.gps\_sensors* is necessary to convert the *gps\_sensors\_code* into the corresponding *gps\_sensors\_id*. You can see that in the WHERE part of the statement two cases are considered: when the acquisition time is after the start and before the end of the deployment, and when the acquisition time is after the start of the deployment and the end is NULL (which means that the sensor is still deployed on the animal). 
+
+##### Exercise
+
+1.  Calculate how many locations for each sensor are not related to any animal (i.e. are not inside any deployment period)
+2.  Create a constraint on *main.gps\_sensors\_animals* to avoid the case where *start\_time* &gt; *end\_time*
+
+### From GPS position to animal locations
+
+Once the information on GPS sensors deployment is included into the database, it is possible to associate locations to animals. It is convenient to store this information in a permanent table.
+
+A new table (*main.gps\_data\_animals*) can be used to store GPS data with the code of the animal were the related sensor is deployed. This table will be the main reference for data analysis, visualization, and dissemination. In the figure below it is illustrated the structure of data flow that populates the *gps\_data\_animals* table.
+
+<p align="center">
+<img src="https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/images/deployment-schema.png" Height="300"/>
+
+Here is the SQL code that generates the *main.gps\_data\_animals* table:
+
+```sql
+CREATE TABLE main.gps_data_animals(
+  gps_data_animals_id serial NOT NULL, 
+  gps_sensors_id integer, 
+  animals_id integer,
+  acquisition_time timestamp with time zone, 
+  longitude double precision,
+  latitude double precision,
+  insert_timestamp timestamp with time zone DEFAULT now(), 
+  CONSTRAINT gps_data_animals_pkey 
+    PRIMARY KEY (gps_data_animals_id),
+  CONSTRAINT gps_data_animals_animals_fkey 
+    FOREIGN KEY (animals_id)
+    REFERENCES main.animals (animals_id) 
+    MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT gps_data_animals_gps_sensors 
+    FOREIGN KEY (gps_sensors_id)
+    REFERENCES main.gps_sensors (gps_sensors_id) 
+    MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+```
+
+```sql
+COMMENT ON TABLE main.gps_data_animals 
+IS 'GPS sensors data associated to animals wearing the sensor.';
+```
+
+```sql
+CREATE INDEX gps_data_animals_acquisition_time_index
+  ON main.gps_data_animals
+  USING BTREE (acquisition_time);
+```
+
+```sql
+CREATE INDEX gps_data_animals_animals_id_index
+  ON main.gps_data_animals
+  USING BTREE (animals_id);
+```
+
+The foreign keys (on *animals\_id* and *sensor\_id*) are created as well as indexes on the fields *animals\_id* and *acquisition\_time* (that are those most probably involved in queries on this table). 
+
+At this point, you can feed the table with the data stored in the table *gps\_data* and use *gps\_sensors\_animals* to derive the id of the animals (checking if the timestamp of the location falls inside the deployment interval of the sensor on an animal):
+
+```sql
+INSERT INTO main.gps_data_animals (
+  animals_id, gps_sensors_id, acquisition_time, longitude, latitude) 
+SELECT 
+  gps_sensors_animals.animals_id,
+  gps_sensors_animals.gps_sensors_id,
+  gps_data.acquisition_time, gps_data.longitude,
+  gps_data.latitude
+FROM 
+  main.gps_sensors_animals, main.gps_data, main.gps_sensors
+WHERE 
+  gps_data.gps_sensors_code = gps_sensors.gps_sensors_code AND
+  gps_sensors.gps_sensors_id = gps_sensors_animals.gps_sensors_id AND
+  (
+    (gps_data.acquisition_time>=gps_sensors_animals.start_time AND 
+     gps_data.acquisition_time<=gps_sensors_animals.end_time)
+    OR 
+    (gps_data.acquisition_time>=gps_sensors_animals.start_time AND 
+     gps_sensors_animals.end_time IS NULL)
+  );
+```
+
+Another possibility is to simultaneously create and populate the table *main.gps\_data\_animals* by using '*CREATE TABLE main.gps\_data\_animals AS*' instead of '*INSERT INTO main.gps\_data\_animals*' in the previous query and then adding the primary and foreign keys and indexes to the table.
+
+##### Exercise
+
+1.  What is the proportion of records with non-null coordinates for each animal?
+2.  Calculate the average longitude and latitude of all females.
+3.  Calculate the dates and location (latitude and longitude) of the first and last collected location per animal.
+4.  Create a view that returns, for each animal, the number of non null locations, the number of null locations, and the start and end date of the deployment.
+
 ## <a name="c_2.6"></a>2.6 Manage the location data in a spatial database
 ## <a name="c_2.7"></a>2.7 From locations to trajectories and home ranges
 ## <a name="c_2.8"></a>2.8 Integrating spatial ancillary information: land cover
 ## <a name="c_2.9"></a>2.9 Data quality: how to detect and manage outliers
-
-
-
 
 
 ## <a name="c_2.10"></a>2.10 Data export 
@@ -1038,3 +1206,404 @@ While data generated by a sensor are usually "clean" (i.e. no errors are expecte
 In general, there are many errors that must be fixed in these data sets (e.g. cell coloured in yellow with no explanation of what it means, numbers out of range, measures related to a survey with a date that not correspond to that of the survey, coordinates out of the study area, name of species not consistently used throughout the same data sets, valuable information not properly coded but left as notes, and many others with no limits to creativity...).  
 In this case, before data are properly structured and stored in a database, the errors must be identified and corrected. This requires a reiterated exchange of information with they who collected the data and . The creation of a database from a dataset collected on the field is a very good opportunities to clean it as the database rejects inconsistency that can be easily found and fixed.  
 From an operational point of view, data cleaning can be done directly on the spreadsheet, or in any other tool (e.g. R). Once you become familiar with database and SQL, you will see that a very effective and efficient way to screen data and fix problem is to import data in a database with all fields in text format (so no *a priori* checks are done on the data) and that processed using the tools offered by the database.
+
+## <a name="c_2.15"></a>2.15 Functions and triggers (supplementary material)
+**NOTE:** *This section (supplementary code) is meant to provide advanced examples of how database tools can be used to improve the management of tracking data. The code itself is introduced to illustrate the goals and functionalities but the technical details are not explained because they require an advanced knowledge of database programming. The idea is that this supplementary code can be used as it is or as a study example for they who want to explore and learn advances features offered by spatial database.*
+
+### Timestamping changes in the database using triggers
+
+It can often be useful to know not only when a record is created but also the last time that a record has been modified and who modified it. This is important to keep track of what happens in the database. This can be achieved using two powerful tools: functions and triggers.
+
+A **[function](http://www.postgresql.org/docs/devel/static/xfunc-sql.html)** is a program code that is implemented inside the database using SQL or a set of other languages (e.g. SQL, PSQL, Python, C). Functions allow you to create complex processes and algorithms when SQL queries alone cannot do the job. Once created, a function becomes part of the database library and can be called inside SQL queries. In the framework of these lessons, you do not need to create your own functions, but you must be aware of the possibility offered by these tools and be able to understand and use existing functions that advanced users can adapt according to their specific needs.
+
+A **[trigger](http://www.postgresql.org/docs/devel/static/triggers.html)** is a specification that the database should automatically execute a particular function whenever a certain type of operation is performed on a particular table in the database. The trigger fires a specific function to perform some actions BEFORE or AFTER records are DELETED, UPDATED, or INSERTED in a table. The trigger function must be defined before the trigger itself can be created. The trigger function must be declared as a function taking no arguments and returning type trigger. For example, when you insert a new record in a table, you can modify the values of the attributes before they are uploaded or you can update another table that should be affected by this new upload. It is important to stress that triggers are very powerful tools for automating the data flow. The drawback is that they will slow down the data import process. This note is also valid for indexes, which speed up queries but imply some additional computation during the import stage. In the case of frequent uploads (or modification) of very large data sets at once, the use of the proposed triggers could significantly decrease performance. In these cases, you can more quickly process the data in a later stage after they are imported into the database and therefore available to users. The best approach must be identified according to the specific goals, constraints, and characteristics of your application. In this guide, we use as reference the management of data coming from a set of sensors deployed on animals, transmitting data in near real time, where the import step will include just few thousand locations at a time. 
+
+It might be convenient to store all functions and ancillary tools in a defined schema:
+
+```sql
+CREATE SCHEMA tools
+  AUTHORIZATION postgres;
+  GRANT USAGE ON SCHEMA tools TO basic_user;
+```
+
+```sql
+COMMENT ON SCHEMA tools 
+IS 'Schema that hosts all the functions and ancillary tools used for the database.';
+```
+
+```sql
+ALTER DEFAULT PRIVILEGES 
+  IN SCHEMA tools 
+  GRANT SELECT ON TABLES 
+  TO basic_user;
+```
+
+Here a simple example of an SQL function that makes the sum of two input integers:
+
+```sql
+CREATE FUNCTION tools.test_add(integer, integer) 
+  RETURNS integer AS 
+'SELECT $1 + $2;'
+LANGUAGE SQL
+IMMUTABLE
+RETURNS NULL ON NULL INPUT;
+```
+
+The variables *$1* and *$2* are the first and second input parameters. You can test it with
+
+```sql
+SELECT tools.test_add(2,7);
+```
+
+As a first simple example of a trigger, you add a field to the table *gps\_data\_animals* where you register the timestamp of the last modification (update) of each record in order to keep track of the changes in the table. This field can have *now()*as default when data is inserted the first time:
+
+```sql
+ALTER TABLE main.gps_data_animals 
+  ADD COLUMN update_timestamp timestamp with time zone DEFAULT now();
+```
+
+Once you have created the field, you need a function called by a trigger to set this field to the timestamp of the change time whenever a record is updated. The SQL to generate the function is:
+
+```sql
+CREATE OR REPLACE FUNCTION tools.timestamp_last_update()
+RETURNS trigger AS
+$BODY$BEGIN
+IF NEW IS DISTINCT FROM OLD THEN
+  NEW.update_timestamp = now();
+END IF;
+RETURN NEW;
+END;$BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+```
+
+```sql
+COMMENT ON FUNCTION tools.timestamp_last_update() 
+IS 'When a record is updated, the update_timestamp is set to the current time.';
+```
+
+Here is the code for the trigger that calls the function:
+
+```sql
+CREATE TRIGGER update_timestamp
+  BEFORE UPDATE
+  ON main.gps_data_animals
+  FOR EACH ROW
+  EXECUTE PROCEDURE tools.timestamp_last_update();
+```
+
+You have to initialize the existing records in the table, as the trigger/function was not yet created when data were uploaded:
+
+```sql
+UPDATE main.gps_data_animals 
+  SET update_timestamp = now();
+```
+
+Another interesting application of triggers is the automation of the *acquisition\_time* computation when a new record is inserted into the *gps\_data* table:
+
+```sql
+CREATE OR REPLACE FUNCTION tools.acquisition_time_update()
+RETURNS trigger AS
+$BODY$BEGIN
+  NEW.acquisition_time = ((NEW.utc_date + NEW.utc_time) at time zone 'UTC');
+  RETURN NEW;
+END;$BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+```
+
+```sql
+COMMENT ON FUNCTION tools.acquisition_time_update() 
+IS 'When a record is inserted, the acquisition_time is composed from utc_date and utc_time.';
+```
+
+```sql
+CREATE TRIGGER update_acquisition_time
+  BEFORE INSERT
+  ON main.gps_data
+  FOR EACH ROW
+  EXECUTE PROCEDURE tools.acquisition_time_update();
+```
+
+
+### Automation of the GPS data association with animals
+In the case of a large number of sensors and animals, the association of locations to animals is hard to manage manually, and usually requires some dedicated, and possibly automated, tools. Moreover, the process of associating GPS positions and animals must be able to manage dynamic changes in the information about sensor deployment. For example, hours or even days can pass before the death of an animal tagged with a GPS sensor is discovered. In the while, the GPS positions acquired in near real time are associated with the animal. This is an error, as the positions recorded between the death and its detection by researchers are not valid and must be 'disassociated' from the animal. A tool to automatically and dynamically update the association between animals and GPS location based on the information stored in the table on sensors deployment would also efficiently manages the re-deployment of a GPS sensor recovered from an animal (because of e.g. end of battery or death of the animal) to another animal, and the deployment of a new GPS sensor on an animal previously monitored with another GPS sensor.
+
+With triggers and functions, you can automatize the upload from *gps\_data* to *gps\_data\_animals* of records that are associated with animals (a sensor deployed on an animal). First, you have to create the function that will be called by the trigger:
+
+```sql
+CREATE OR REPLACE FUNCTION tools.gps_data2gps_data_animals()
+RETURNS trigger AS
+$BODY$ begin
+INSERT INTO main.gps_data_animals (
+  animals_id, gps_sensors_id, acquisition_time, longitude, latitude)
+SELECT 
+  gps_sensors_animals.animals_id, gps_sensors_animals.gps_sensors_id, NEW.acquisition_time, NEW.longitude, NEW.latitude
+FROM 
+  main.gps_sensors_animals, main.gps_sensors
+WHERE 
+  NEW.gps_sensors_code = gps_sensors.gps_sensors_code AND 
+  gps_sensors.gps_sensors_id = gps_sensors_animals.gps_sensors_id AND
+  (
+    (NEW.acquisition_time >= gps_sensors_animals.start_time AND 
+     NEW.acquisition_time <= gps_sensors_animals.end_time)
+    OR 
+    (NEW.acquisition_time >= gps_sensors_animals.start_time AND 
+     gps_sensors_animals.end_time IS NULL)
+  );
+RETURN NULL;
+END
+$BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+```
+
+```sql
+COMMENT ON FUNCTION tools.gps_data2gps_data_animals() 
+IS 'Automatic upload data from gps_data to gps_data_animals.';
+```
+
+Then, you create a trigger that calls the function whenever a new record is uploaded into \*gps\_data\*:
+
+```sql
+CREATE TRIGGER trigger_gps_data_upload
+  AFTER INSERT
+  ON main.gps_data
+  FOR EACH ROW
+  EXECUTE PROCEDURE tools.gps_data2gps_data_animals();
+```
+
+```sql
+COMMENT ON TRIGGER trigger_gps_data_upload ON main.gps_data
+IS 'Upload data from gps_data to gps_data_animals whenever a new record is inserted.';
+```
+
+You can test this function by adding the last GPS sensor not yet imported:
+
+```sql
+COPY main.gps_data(
+  gps_sensors_code, line_no, utc_date, utc_time, lmt_date, lmt_time, ecef_x, ecef_y, ecef_z, latitude, longitude, height, dop, nav, validated, sats_used, ch01_sat_id, ch01_sat_cnr, ch02_sat_id, ch02_sat_cnr, ch03_sat_id, ch03_sat_cnr, ch04_sat_id, ch04_sat_cnr, ch05_sat_id, ch05_sat_cnr, ch06_sat_id, ch06_sat_cnr, ch07_sat_id, ch07_sat_cnr, ch08_sat_id, ch08_sat_cnr, ch09_sat_id, ch09_sat_cnr, ch10_sat_id, ch10_sat_cnr, ch11_sat_id, ch11_sat_cnr, ch12_sat_id, ch12_sat_cnr, main_vol, bu_vol, temp, easting, northing, remarks)
+FROM 
+  'C:\tracking_db\data\sensors_data\GSM02927.csv' 
+  WITH (FORMAT csv, HEADER, DELIMITER ';');
+```
+
+Data are automatically processed and imported into the table *gps\_data\_animals* including the correct association with the animal wearing the sensor.
+
+
+### Consistency checks on the deployments information
+
+The management of the association between animals and GPS sensors can be further improved using additional, more sophisticated tools. A first example is the implementation of consistency checks on the *gps\_sensors\_animals* table. You already created a check to ensure that the *start\_date* &lt; *end\_date*, but this is not enough to prevent illogical associations between animals and sensors. The two most evident constraints are that the same sensor cannot be worn by two animals at the same time, and that no more than one GPS sensor can be deployed on the same animal at the same time (this assumption can be questionable in case of other sensors, but in general can be considered valid for GPS). To avoid any impossible overlaps in animal/sensor deployments, you have to create a trigger on both insertion and updates of records in *gps\_animals\_sensors* that verifies the correctness of the new values (i.e. the new deployment interval is not in conflict with other existing deployments). **[NEW](http://www.postgresql.org/docs/devel/static/plpgsql-trigger.html)** in a BEFORE INSERT/UPDATE trigger refers to the values that are going to be inserted. In an UPDATE/DELETE trigger, **[OLD](http://www.postgresql.org/docs/devel/static/plpgsql-trigger.html)** refers to the value that is going to be modified. In case of invalid values, the insert/modify statement is aborted and an error message is raised by the database. Here is an example of code for this function:
+
+```sql
+CREATE OR REPLACE FUNCTION tools.gps_sensors_animals_consistency_check()
+RETURNS trigger AS
+$BODY$
+DECLARE
+  deletex integer;
+BEGIN
+
+SELECT 
+  gps_sensors_animals_id 
+INTO 
+  deletex 
+FROM 
+  main.gps_sensors_animals b
+WHERE
+  (NEW.animals_id = b.animals_id OR NEW.gps_sensors_id = b.gps_sensors_id)
+  AND
+  (
+  (NEW.start_time > b.start_time AND NEW.start_time < b.end_time)
+  OR
+  (NEW.start_time > b.start_time AND b.end_time IS NULL)
+  OR
+  (NEW.end_time > b.start_time AND NEW.end_time < b.end_time)
+  OR
+  (NEW.start_time < b.start_time AND NEW.end_time > b.end_time)
+  OR
+  (NEW.start_time < b.start_time AND NEW.end_time IS NULL )
+  OR
+  (NEW.end_time > b.start_time AND b.end_time IS NULL)
+);
+
+IF deletex IS not NULL THEN
+  IF TG_OP = 'INSERT' THEN
+    RAISE EXCEPTION 'This row is not inserted: Animal-sensor association not valid: (the same animal would wear two different GPS sensors at the same time or the same GPS sensor would be deployed on two animals at the same time).';
+    RETURN NULL;
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    IF deletex != OLD.gps_sensors_animals_id THEN
+      RAISE EXCEPTION 'This row is not updated: Animal-sensor association not valid (the same animal would wear two different GPS sensors at the same time or the same GPS sensor would be deployed on two animals at the same time).';
+      RETURN NULL;
+    END IF;
+  END IF;
+END IF;
+
+RETURN NEW;
+END;
+$BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+```
+
+```sql
+COMMENT ON FUNCTION tools.gps_sensors_animals_consistency_check() 
+IS 'Check if a modified or insert row in gps_sensors_animals is valid (no impossible time range overlaps of deployments).';
+```
+
+Here is an example of the trigger to call the function:
+
+```sql
+CREATE TRIGGER gps_sensors_animals_changes_consistency
+  BEFORE INSERT OR UPDATE
+  ON main. gps_sensors_animals
+  FOR EACH ROW
+  EXECUTE PROCEDURE tools.gps_sensors_animals_consistency_check();
+```
+
+You can test this process by trying to insert a deployment of a GPS sensor in the `gps_sensors_animals` table in a time interval that overlaps the association of the same sensor on another animal:
+
+```sql
+INSERT INTO main.gps_sensors_animals
+  (animals_id, gps_sensors_id, start_time, end_time, notes)
+VALUES
+  (2,2,'2004-10-23 20:00:53 +0','2005-11-28 13:00:00 +0','Ovelapping sensor');
+```
+
+You should receive an error message like:
+
+```
+> **\*\*\**** Error ***\*\**\**** ERROR: This row is not inserted:
+Animal-sensor association not valid: (the same animal would wear two
+different GPS sensors at the same time or the same GPS sensor would be
+deployed on two animals at the same time). SQL state: P0001
+```
+
+## Synchronization of *gps\_sensors\_animals* and *gps\_data\_animals*
+
+In an operational environment where data are managed in (near) real time, it happens that the information about the association between animals and sensors changes over time. A typical example is the death of an animal: this event is usually discovered with a delay of some days. In the meantime, GPS positions are received and associated with the animals in the *gps\_data\_animals* table. When the new information on the deployment time range is registered in*gps\_sensors\_animals*, the table *gps\_data\_animals* must be changed accordingly. It is highly desirable that any change in the table *gps\_sensors\_animals* is automatically reflected in *gps\_data\_animals*. It is possible to use triggers to keep the two tables automatically synchronized in real time. Here below you have an example of a trigger function to implement this procedure. The code is fairly complex because it manages the three possible operations: delete, insert, and modification of the *gps\_sensors\_animals* table. For each case, it checks whether GPS positions previously associated with an animal are no longer valid (and if so, deletes them from the table *gps\_data\_animals*) and whether GPS positions previously not associated with the animal should now be linked (and if so, adds them to the table*gps\_data\_animals*).
+
+```sql
+CREATE OR REPLACE FUNCTION tools.gps_sensors_animals2gps_data_animals()
+RETURNS trigger AS
+$BODY$ begin
+
+IF TG_OP = 'DELETE' THEN
+
+  DELETE FROM 
+    main.gps_data_animals 
+  WHERE 
+    animals_id = OLD.animals_id AND
+    gps_sensors_id = OLD.gps_sensors_id AND
+    acquisition_time >= OLD.start_time AND
+    (acquisition_time <= OLD.end_time OR OLD.end_time IS NULL);
+  RETURN NULL;
+
+END IF;
+
+IF TG_OP = 'INSERT' THEN
+
+  INSERT INTO 
+    main.gps_data_animals (gps_sensors_id, animals_id, acquisition_time, longitude, latitude)
+  SELECT 
+    NEW.gps_sensors_id, NEW.animals_id, gps_data.acquisition_time, gps_data.longitude, gps_data.latitude
+  FROM 
+    main.gps_data, main.gps_sensors
+  WHERE 
+    NEW.gps_sensors_id = gps_sensors.gps_sensors_id AND
+    gps_data.gps_sensors_code = gps_sensors.gps_sensors_code AND
+    gps_data.acquisition_time >= NEW.start_time AND
+    (gps_data.acquisition_time <= NEW.end_time OR NEW.end_time IS NULL);
+  RETURN NULL;
+
+END IF;
+
+IF TG_OP = 'UPDATE' THEN
+
+  DELETE FROM 
+    main.gps_data_animals 
+  WHERE
+    gps_data_animals_id IN (
+      SELECT 
+        d.gps_data_animals_id 
+      FROM
+        (SELECT 
+          gps_data_animals_id, gps_sensors_id, animals_id, acquisition_time 
+        FROM 
+          main.gps_data_animals
+        WHERE 
+          gps_sensors_id = OLD.gps_sensors_id AND
+          animals_id = OLD.animals_id AND
+          acquisition_time >= OLD.start_time AND
+          (acquisition_time <= OLD.end_time OR OLD.end_time IS NULL)
+        ) d
+      LEFT OUTER JOIN
+        (SELECT 
+          gps_data_animals_id, gps_sensors_id, animals_id, acquisition_time 
+        FROM 
+          main.gps_data_animals
+        WHERE 
+          gps_sensors_id = NEW.gps_sensors_id AND
+          animals_id = NEW.animals_id AND
+          acquisition_time >= NEW.start_time AND
+          (acquisition_time <= NEW.end_time OR NEW.end_time IS NULL) 
+        ) e
+      ON 
+        (d.gps_data_animals_id = e.gps_data_animals_id)
+      WHERE e.gps_data_animals_id IS NULL);
+
+  INSERT INTO 
+    main.gps_data_animals (gps_sensors_id, animals_id, acquisition_time, longitude, latitude) 
+  SELECT 
+    u.gps_sensors_id, u.animals_id, u.acquisition_time, u.longitude, u.latitude 
+  FROM
+    (SELECT 
+      NEW.gps_sensors_id AS gps_sensors_id, NEW.animals_id AS animals_id, gps_data.acquisition_time AS acquisition_time, gps_data.longitude AS longitude, gps_data.latitude AS latitude
+    FROM 
+      main.gps_data, main.gps_sensors
+    WHERE 
+      NEW.gps_sensors_id = gps_sensors.gps_sensors_id AND 
+      gps_data.gps_sensors_code = gps_sensors.gps_sensors_code AND
+      gps_data.acquisition_time >= NEW.start_time AND
+      (acquisition_time <= NEW.end_time OR NEW.end_time IS NULL)
+    ) u
+  LEFT OUTER JOIN
+    (SELECT 
+      gps_data_animals_id, gps_sensors_id, animals_id, acquisition_time 
+    FROM 
+      main.gps_data_animals
+    WHERE 
+      gps_sensors_id = OLD.gps_sensors_id AND
+      animals_id = OLD.animals_id AND
+      acquisition_time >= OLD.start_time AND
+      (acquisition_time <= OLD.end_time OR OLD.end_time IS NULL)
+    ) w
+  ON 
+    (u.gps_sensors_id = w.gps_sensors_id AND 
+    u.animals_id = w.animals_id AND 
+    u.acquisition_time = w.acquisition_time )
+  WHERE 
+    w.gps_data_animals_id IS NULL;
+  RETURN NULL;
+
+END IF;
+
+END;$BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+```
+
+```sql
+COMMENT ON FUNCTION tools.gps_sensors_animals2gps_data_animals() 
+IS 'When a record in gps_sensors_animals is deleted OR updated OR inserted, this function synchronizes this information with gps_data_animals.';
+```
+
+Here is the code of the trigger to call the function:
+
+```sql
+CREATE TRIGGER synchronize_gps_data_animals
+  AFTER INSERT OR UPDATE OR DELETE
+  ON main.gps_sensors_animals
+  FOR EACH ROW
+  EXECUTE PROCEDURE tools.gps_sensors_animals2gps_data_animals();
+```
