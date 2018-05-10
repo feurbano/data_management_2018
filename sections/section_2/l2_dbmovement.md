@@ -1,19 +1,19 @@
 # <a name="c_2.1"></a>2. Movement Ecology Data Management
 
-* [2.1 Introduction to the goals and the datasets](c_2.1)
-* [2.2 Create a db and import sensor data](c_2.2)
-* [2.3 Create acquisition timestamps, indexes and permissions](c_2.3)
-* [2.4 Managing and modelling information on animals and sensors](c_2.4)
-* [2.5 From data to information: associating locations to animals](c_2.5)
-* [2.6 Manage the location data in a spatial database](c_2.6)
-* [2.7 From locations to trajectories and home ranges](c_2.7)
-* [2.8 Integrating spatial ancillary information: land cover](c_2.8)
-* [2.9 Data quality: how to detect and manage outliers](c_2.9)
-* [2.10 Data export](c_2.10)
-* [2.11 Database maintenance](c_2.11)
-* [2.12 Recap exercises](c_2.12)
-* [2.13 Raster Data in PostGIS (demo)](c_2.13)
-* [2.14 Deal with data collected on the field (demo)](c_2.14)
+* [2.1 Introduction to the goals and the datasets](#c_2.1)
+* [2.2 Create a db and import sensor data](#c_2.2)
+* [2.3 Create acquisition timestamps, indexes and permissions](#c_2.3)
+* [2.4 Managing and modelling information on animals and sensors](#c_2.4)
+* [2.5 From data to information: associating locations to animals](#c_2.5)
+* [2.6 Manage the location data in a spatial database](#c_2.6)
+* [2.7 From locations to trajectories and home ranges](#c_2.7)
+* [2.8 Integrating spatial ancillary information: land cover](#c_2.8)
+* [2.9 Data quality: how to detect and manage outliers](#c_2.9)
+* [2.10 Data export](#c_2.10)
+* [2.11 Database maintenance](#c_2.11)
+* [2.12 Recap exercises](#c_2.12)
+* [2.13 Raster Data in PostGIS (demo)](#c_2.13)
+* [2.14 Deal with data collected on the field (demo)](#c_2.14)
 
 ## <a name="c_2.1"></a>2.1 Introduction to the goals and the data set
 Once a tracking project starts and sensors are deployed on animals, data begin to arrive (usually in the form of text files containing the raw information recorded by sensors). At this point, data must be handled by researchers. The aim of this exercise is to set up an operational database where GPS data coming from roe deer monitored in the Alps can be stored, managed and analysed. The information form the sensors must be complemented with other information on the individuals, deployments and surrounding environment to have a complete picture of the animals movement.
