@@ -13,7 +13,7 @@
 * 1.3 Schemas, tables, data types
 * 1.4 SELECT, FROM, WHERE
 * 1.5 AND, OR, IN, !=, NULL
-* 1.6 ORDER BY, LIMIT, DISTINCT
+* 1.6 ORDER BY, LIMIT, DISTINCT, CASE, CAST
 * 1.7 LIKE
 * 1.8 GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)
 * 1.9 HAVING
@@ -41,36 +41,19 @@
 * 2.5 From data to information: associating locations to animals
 * 2.6 Manage the location data in a spatial database
 * 2.7 From locations to trajectories and home ranges
-* 2.8 Integrating spatial ancillary information: land cover
+* 2.8 Integrating spatial ancillary information
 * 2.9 Data quality: how to detect and manage outliers
 * 2.10 Data export
 * 2.11 Database maintenance
 * 2.12 Recap exercises
 * 2.13 Raster Data in PostGIS (demo)
-* 2.14 Deal with data collected on the field (demo)
-* 2.15 Functions and triggers (supplementary material)
+* 2.14 Functions and triggers (supplementary material)
 
 ## 3. Movement Ecology Data Analysis with R (Basille, 6 h)
-* 3.1 Introduction to R
-* 3.2 Relevant R packages
-* 3.3 How to Harmonize Software Environments
-* 3.4 Analysis step 1 (...)
-* 3.5 Analysis step 2 (...)
-* 3.n Analysis step n (...)
 
 ## 4. From Population Data to Spatial Modelling (Nilsen, 4 h)
-* 4.1 Theory
-* 4.2 Step 1
-* 4.3 Step 2
-* 4.4 Step 3
-* 4.n Step n
 
 ## 5. Resource Selection Analysis in Movement Ecology (Van Loon, 4 h)
-* 5.1 Theory
-* 5.2 Step 1
-* 5.3 Step 2
-* 5.4 Step 3
-* 5.n Step n
 
 ## 6. Special Topics
 * 6.1 The Ecological Context Built from Satellites, including Sentinel (Rocchini, 30 minutes)

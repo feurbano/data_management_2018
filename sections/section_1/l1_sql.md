@@ -5,7 +5,7 @@
 * [1.3  Schemas, tables, data types](#c_1.3)
 * [1.4  SELECT, FROM, WHERE](#c_1.4)
 * [1.5  AND, OR, IN, !=, NULL](#c_1.5)
-* [1.6  ORDER BY, LIMIT, DISTINCT](#c_1.6)
+* [1.6  ORDER BY, LIMIT, DISTINCT, CASE, CAST](#c_1.6)
 * [1.7  LIKE](#c_1.7)
 * [1.8  GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)](#c_1.8)
 * [1.9  HAVING](#c_1.9)
@@ -146,7 +146,7 @@ The complete reference of the `SELECT` statement and related commands is availab
 [here](https://www.postgresql.org/docs/devel/static/sql-select.html).
 
 ## <a name="c_1.5"></a>1.5 AND, OR, IN, !=, NULL
-## <a name="c_1.6"></a>1.6 ORDER BY, LIMIT, DISTINCT
+## <a name="c_1.6"></a>ORDER BY, LIMIT, DISTINCT, CASE, CAST
 Sometimes we are only interested in which values do appear, and not on
 specific records. In this casee would use `DISTINCT` to squash duplicate values, like so:
 
