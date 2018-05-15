@@ -161,6 +161,9 @@ SELECT DISTINCT ccc FROM www;
 ## <a name="c_1.11"></a>1.11 LEFT JOIN
 ## <a name="c_1.12"></a>1.12 Nested queries
 ## <a name="c_1.13"></a>1.13 WINDOW functions
+
+A window function performs a calculation across a set of rows that are somehow related to the current row. This is similar to an aggregate function, but unlike regular aggregate functions, window functions do not group rows into a single output row, hence they are still able to access more than just the current row of the query result. In particular, it enables you to access previous and next rows (according to a user-defined ordering criteria) while calculating values for the current row. This is very useful, as a tracking data set has a predetermined temporal order, where many properties (e.g. geometric parameters of the trajectory, such as turning angle and speed) involve a sequence of GPS positions. It is important to remember that the order of records in a database is irrelevant. The ordering criteria must be set in the query that retrieves data.
+
 ## <a name="c_1.14"></a>1.14 INSERT, UPDATE, DELETE
 > Data modification in SQL is accomplished with three statements:
 > `INSERT`, `UPDATE`, `DELETE`. Syntax is pretty simple, let's see a few

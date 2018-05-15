@@ -1,6 +1,6 @@
 # <a name="c_2.1"></a>2. Movement Ecology Data Management
 
-* **[2.1 Introduction to the goals and the datasets](#c_2.1)**
+* **[2.1 Introduction](#c_2.1)**
 * **[2.2 Create a db and import sensor data](#c_2.2)**
 * **[2.3 Create acquisition timestamps, indexes and permissions](#c_2.3)**
 * **[2.4 Managing and modelling information on animals and sensors](#c_2.4)**
@@ -14,14 +14,9 @@
 * **[2.12 Recap exercises](#c_2.12)**
 * **[2.13 Raster Data in PostGIS (demo)](https://github.com/feurbano/data_management_2018/blob/master/sections/section2/l2.13_raster.md)**
 * **[2.14 Functions and triggers (supplementary material](https://github.com/feurbano/data_management_2018/blob/master/sections/section2/l2.14_supplementary.md)**
-  * [Timestamping changes in the database using triggers](#c_2.14.1)
-  * [Automation of the GPS data association with animal](#c_2.14.2)
-  * [Consistency checks on the deployments information](#c_2.14.3)
-  * [Synchronization of *gps\_sensors\_animals* and *gps\_data\_animals*](#c_2.14.4)
-  * [Automating the creation of points from GPS coordinates](#c_2.14.5)
-  * [UTM zone of a given point in geographic coordinates](#c_2.14.6)
 
-## <a name="c_2.1"></a>2.1 Introduction to the goals and the data set
+
+## <a name="c_2.1"></a>2.1 Introduction
 Once a tracking project starts and sensors are deployed on animals, data begin to arrive (usually in the form of text files containing the raw information recorded by sensors). At this point, data must be handled by researchers. The aim of this exercise is to set up an operational database where GPS data coming from roe deer monitored in the Alps can be stored, managed and analysed. The information form the sensors must be complemented with other information on the individuals, deployments and surrounding environment to have a complete picture of the animals movement.
 
 In this lesson, you are guided through how to set up a new database in which you will create a table to accommodate the test GPS data sets. You create a new table in a dedicated schema. This lesson describes how to upload the raw GPS data coming from five sensors deployed on roe deer in the Italian Alps into the database and how tocreate additional database users.
@@ -169,6 +164,7 @@ PgAdmin offers the possibility to import data (including local data to a server)
   -   GSM01508
   -   GSM01511
   -   GSM01512
+  -   GSM02927
 
 ## <a name="c_2.3"></a>2.3 Create acquisition timestamps, indexes and permissions
 
@@ -617,8 +613,9 @@ While in general in animal tracking most of the data come from sensors, still th
 * the time of deployment is not provided (but it is very important!), only the date
 * the time zone of the start/end time is not provided
 * the period of deployment is suspicious (very long or very short)
+* the same collar is deployed on two animals at the same time
 * the period of deployment do not match with the timestamp of the locations in the sensor data file (it is longer, or much shorter)
-* once visualized the first locations show an unusual spatial pattern (e.g. along the highway between the research centre and the study area)
+* once visualized the first and/or last locations show an unusual spatial pattern (e.g. along the highway between the research centre and the study area)
 
 All these things must be verified with they who provided the data.
 Another typical problem is the name of the animal. In some research groups, it happens to assign the code of the GPS sensor as name to animals, but when the same animal is monitored with another collar or the same collar is deployed on another animal, it is no more possible to related the data to the correct individual. Unusual patterns in the name of the animals is also a point to control.
@@ -902,7 +899,6 @@ In traditional information systems for wildlife tracking data management, positi
 -   Points: meteorological stations (derived from [MeteoTrentino](http://www.meteotrentino.it/))
 -   Linestrings: roads network (derived from [OpenStreetMap](http://www.openstreetmap.org/))
 -   Polygons: administrative units (derived from [ISTAT](http://www.istat.it/it/strumenti/cartografia)) and the study area.
--   Rasters: land cover (source: [Corine](http://www.eea.europa.eu/data-and-maps/data/corine-land-cover-2006-clc2006-100-m-version-12-2009)) and digital elevation models (source: [SRTM](http://srtm.csi.cgiar.org/), see also *Jarvis A, Reuter HI, Nelson A, Guevara E (2008) Hole-filled seamless SRTM data V4. International Centre for Tropical Agriculture (CIAT)*).
 
 Each species and study have specific data sets required and available, so the goal of this example is to show a complete set of procedures that can be replicated and customized on different data sets. Once layers are integrated into the database, you are encouraged to visualize and explore them in a GIS environment (e.g. QGIS). Once data are loaded into the database, you will extend the *gps\_data\_animals* table with the environmental attributes derived from the ancillary layers provided in the test data set. It is a good practice to store your environmental layers in a dedicated schema in order to keep a clear database structure. Let's create the schema *env\_data*:
 
@@ -952,69 +948,11 @@ And for the administrative boundaries:
 
 Now the shapefiles are in the database as new tables (one table for each shapefile). You can visualize them through a GIS interface (e.g. QGIS). You can also retrieve a summary of the information from all vector layers available in the database with the following command:
 
-```sql
-SELECT * FROM geometry_columns;
-```
-
-The primary method to import a raster layer is the command-line tool **[raster2pgsql](http://postgis.net/docs/using_raster_dataman.html)**, the equivalent of shp2pgsql but for raster files, that converts GDAL-supported rasters into SQL suitable for loading into PostGIS. It is also capable of loading folders of raster files. **[GDAL](http://www.gdal.org/)** (Geospatial Data Abstraction Library) is a (free) library for reading, writing and processing raster geospatial data formats. It has a lot of simple but very powerful and fast command-line tools for raster data translation and processing. The related OGR library provides a similar capability for simple vector data features. GDAL is used by most of the spatial open-source tools and by a large number of commercial software programs as well. You will probably benefit in particular from the tools *gdalinfo* (get a layer's basic metadata), *gdal\_translate* (change data format, change data type, cut), gdalwarp1 (mosaicing, reprojection and warping utility).
-
-An interesting feature of *raster2pgsql* is its capability to store the rasters inside the database (in-db) or keep them as (out-db) files in the file system (with the raster2pgsql -R option). In the last case, only raster metadata are stored in the database, not pixel values themselves. Loading out-db rasters metadata is much faster than loading them completely in the database. Most operations at the pixel values level (e.g. \*ST\_SummaryStats\*) will have equivalent performance with out- and in-db rasters. Other functions, like *ST\_Tile*, involving only the metadata, will be faster with out-db rasters. Another advantage of out-db rasters is that they stay accessible for external applications unable to query databases (with SQL). However, the administrator must make sure that the link between what is in the db (the path to the raster file in the file system) is not broken (e.g. by moving or renaming the files). On the other hand, only in-db rasters can be generated with CREATE TABLE and modified with UPDATE statements. Which is the best choice depends on the size of the data set and on considerations about performance and database management. A good practice is generally to load very large raster data sets as out-db and to load smaller ones as in-db to save time on loading and to avoid repeatedly backing up huge, static rasters.
-
-The QGIS plugin *Load Raster to PostGIS* can also be used to import raster data with a graphical interface. An important parameter to set when importing raster layers is the number of tiles (*-t* option). Tiles are small subsets of the image and correspond to a physical record in the table. This approach dramatically decreases the time required to retrieve information. The recommended values for the tile option range from 20x20 to 100x100. Here is the code (to be run in the Command Prompt) to transform a raster (the digital elevation model derived from SRTM) into the SQL code that is then used to physically load the raster into the database (as you did with *shp2pgsql* for vectors):
-
-```
-> "C:\PostgreSQL\9.6\bin\raster2pgsql.exe" -I -M -C -s 4326 -t 20x20 C:\tracking_db\data\env_data\raster\srtm_dem.tif env_data.srtm_dem | "C:\Program Files\PostgreSQL\9.6\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
-```
-
-If you copy-paste the copy from an Internet browser, some character (e.g. double quotes and 'x') might be transformed into different character and you might have to manually fix this problem). You can repeat the same process on the land cover layer:
-
-```
-> "C:\PostgreSQL\9.6\bin\raster2pgsql.exe" -I -M -C -s 3035 C:\tracking_db\data\env_data\raster\corine06.tif -t 20x20 env_data.corine_land_cover | "C:\Program Files\PostgreSQL\9.6\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
-```
-
-The reference system of the Corine Land Cover data set is not geographic coordinates (SRID 4326), but ETRS89/ETRS-LAEA (SRID 3035), an equal-area projection over Europe. This must be specified with the -s option and kept in mind when this layer will be connected to other spatial layers stored in a different reference system. As with shp2pgsql.exe, the -I option will create a spatial index on the loaded tiles, speeding up many spatial operations, and the*-C* option will generate a set of constraints on the table, allowing it to be correctly listed in the *raster\_columns* metadata table. The land cover raster identifies classes that are labeled by a code (an integer). To specify the meaning of the codes, you can add a table where they are described. In this example, the land cover layer is taken from the Corine project. Classes are described by a hierarchical legend over three nested levels. The legend is provided in the test data set in the file *corine\_legend.csv*. You import the table of the legend (first creating an empty table, and then loading the data):
-
-```sql
-CREATE TABLE env_data.corine_land_cover_legend(
-  grid_code integer NOT NULL,
-  clc_l3_code character(3),
-  label1 character varying,
-  label2 character varying,
-  label3 character varying,
-  CONSTRAINT corine_land_cover_legend_pkey 
-    PRIMARY KEY (grid_code ));
-```
-
-```sql
-COMMENT ON TABLE env_data.corine_land_cover_legend
-IS 'Legend of Corine land cover, associating the numeric code to the three nested levels.';
-```
-
-Then you load the data:
-
-```sql
-COPY env_data.corine_land_cover_legend 
-FROM 
-  'C:\tracking_db\data\env_data\raster\corine_legend.csv' 
-  WITH (FORMAT csv, HEADER, DELIMITER ';');
-```
-
-You can retrieve a summary of the information from all raster layers available in the database with the following command:
-
-```sql
-SELECT * FROM raster_columns;
-```
-
 To keep a well-documented database, add comments to describe all the spatial layers that you have added:
 
 ```sql
 COMMENT ON TABLE env_data.adm_boundaries 
 IS 'Layer (polygons) of administrative boundaries (comuni).';
-```
-
-```sql
-COMMENT ON TABLE env_data.corine_land_cover 
-IS 'Layer (raster) of land cover (from Corine project).';
 ```
 
 ```sql
@@ -1025,11 +963,6 @@ IS 'Layer (points) of meteo stations.';
 ```sql
 COMMENT ON TABLE env_data.roads 
 IS 'Layer (lines) of roads network.';
-```
-
-```sql
-COMMENT ON TABLE env_data.srtm_dem 
-IS 'Layer (raster) of digital elevation model (from SRTM project).';
 ```
 
 ```sql
@@ -1074,30 +1007,6 @@ ORDER BY
 LIMIT 1;
 ```
 
-For users, the data type (vector, raster) used to store spatial information is not so relevant when they query their data: queries should transparently use any kind of spatial data as input. Users can then focus on the environmental model instead of worrying about the data model. In the next example, you intersect a point with two raster layers (altitude and land cover) in the same way you do for vector layers. In the case of land cover, the point must first be projected into the Corine reference system (SRID 3035). In the raster layer, just the Corine code class (integer) is stored while the legend is stored in the table *env\_data.corine\_land\_cover\_legend*. In the query, the code class is joined to the legend table and the code description is returned. This is an example of integration of both spatial and non-spatial elements in the same query.
-
-```sql
-SELECT 
-  ST_Value(srtm_dem.rast,
-  (ST_SetSRID(ST_MakePoint(11,46), 4326))) AS altitude,
-  ST_value(corine_land_cover.rast,
-  ST_transform((ST_SetSRID(ST_MakePoint(11,46), 4326)), 3035)) AS land_cover, 
-  label2, 
-  label3
-FROM 
-  env_data.corine_land_cover, 
-  env_data.srtm_dem, 
-  env_data.corine_land_cover_legend
-WHERE 
-  ST_Intersects(
-    corine_land_cover.rast,
-    ST_Transform((ST_SetSRID(ST_MakePoint(11,46), 4326)), 3035)) AND
-  ST_Intersects(srtm_dem.rast,(ST_SetSRID(ST_MakePoint(11,46), 4326))) AND
-  grid_code = ST_Value(
-    corine_land_cover.rast,
-    ST_Transform((ST_SetSRID(ST_MakePoint(11,46), 4326)), 3035));
-```
-
 Now combine roads and administrative boundaries to compute how many meters of roads there are in each administrative unit. You first have to intersect the two layers (*ST\_Intersection*), then compute the length (*ST\_Length*) and summarize per administrative unit (sum() associated with GROUP BY clause).
 
 ```sql
@@ -1116,101 +1025,400 @@ ORDER BY
   total_length desc;
 ```
 
-The last examples are about the interaction between rasters and polygons. In this case, we compute some statistics (minimum, maximum, mean, and standard deviation) for the altitude within the study area:
-
-```sql
-SELECT 
-  (sum(ST_Area(((gv).geom)::geography)))/1000000 area,
-  min((gv).val) alt_min, 
-  max((gv).val) alt_max,
-  avg((gv).val) alt_avg,
-  stddev((gv).val) alt_stddev
-FROM
-  (SELECT 
-    ST_intersection(rast, geom) AS gv
-  FROM 
-    env_data.srtm_dem,
-    env_data.study_area 
-  WHERE 
-    ST_intersects(rast, geom)
-) foo;
-```
-
-The result show the large variability of altitude across the study area.
-
-You might also be interested in the number of pixels of each land cover type within the study area. As with the previous example, we first intersect the study area with the raster of interest, but in this case we need to reproject the study area polygon into the coordinate system of the Corine land cover raster (SRID: 3035). With the following query, you can see the dominance of mixed forests in the study area:
-
-```sql
-SELECT (pvc).value, SUM((pvc).count) AS total, label3
-FROM 
-  (SELECT ST_ValueCount(rast) AS pvc
-  FROM env_data.corine_land_cover, env_data.study_area
-  WHERE ST_Intersects(rast, ST_Transform(geom, 3035))) AS cnts, 
-  env_data.corine_land_cover_legend
-WHERE grid_code = (pvc).value
-GROUP BY (pvc).value, label3
-ORDER BY (pvc).value;
-```
-
-The previous query can be modified to return the percentage of each class over the total number of pixels. This can be achieved using **[window functions](http://www.postgresql.org/docs/devel/static/tutorial-window.html)**:
-
-```sql
-SELECT 
-  (pvc).value, 
-  (SUM((pvc).count)*100/
-    SUM(SUM((pvc).count)) over ()
-  )::numeric(4,2) AS total_perc, label3
-FROM 
-  (SELECT ST_ValueCount(rast) AS pvc
-  FROM env_data.corine_land_cover, env_data.study_area
-  WHERE ST_Intersects(rast, ST_Transform(geom, 3035))) AS cnts, 
-  env_data.corine_land_cover_legend
-WHERE grid_code = (pvc).value
-GROUP BY (pvc).value, label3
-ORDER BY (pvc).value;
-```
-
 ##### Exercise
 
 1.  What is the administrative unit where each meteo station is located?
-2.  What is the land cover class where each meteo station is located?
-3.  What is the distance of each GPS position to the closest road?
-4.  What is the proportion of GPS locations in each land cover class used by all animals?
+2.  What is the distance of each GPS position to the closest road?
+3.  What is the number of GPS locations in each administrative unit?
+  
+### Associate environmental characteristics with GPS locations
+
+The association of GPS position with environmental attributes can be part of the preliminary processing before data analysis where a set of procedures is created to intersect ancillary layers with GPS positions. Database tools like triggers and functions can be used for this scope. The result is that positions are transformed from a simple pair of numbers (coordinates) to complex multi-dimensional (spatial) objects that define the individual and its habitat in time and space, including their interactions and dependencies. In an additional step, position data can also be joined to activity data to define an even more complete picture of the animal's behavior. Once this is implemented in the database framework, scientists and wildlife managers can deal with data in the same way they model the object of their study as they can start their analyses from objects that represent the animals in their habitat (which previously was the result of a long and complex process). Moreover, users can directly query these objects using a simple and powerful language (SQL) that is close to their natural language. All these elements strengthen the opportunity provided by GPS data to move from mainly testing statistical hypotheses to focusing on biological hypotheses. Scientists can store, access, and manipulate their data in a simple and quick way, which allows them to formulate biological questions that previously were almost impossible to answer for technical reasons. In this lesson, GPS data and ancillary information are connected with automated procedures. In an extra section, an example is illustrated to manage time series of environmental layers that can introduce temporal variability in habitat conditions.
+
+The goal of this exercise is to automatically transform position data from simple points to objects holding information about the habitat and conditions where the animals were located at a certain moment in time. We will use the points to automatically extract, by the mean of a SQL trigger, this information from other ecological layers.
+
+The first step is to add the new fields of information into the *main.gps\_data\_animals* table. We will add columns for the name of the administrative unit to which the GPS position belongs, the code for the land cover it is located in, the altitude from the digital elevation model (which can then be used as the third dimension of the point), the id of the closest meteorological station, and the distance to the closest road:
+
+```sql
+ALTER TABLE main.gps_data_animals 
+  ADD COLUMN pro_com integer;
+```
 
 
+```sql
+ALTER TABLE main.gps_data_animals 
+  ADD COLUMN altitude_srtm integer;
+```
 
+```sql
+ALTER TABLE main.gps_data_animals 
+  ADD COLUMN station_id integer;
+```
 
+```sql
+ALTER TABLE main.gps_data_animals 
+  ADD COLUMN roads_dist integer;
+```
 
+These are several common examples of environmental information that can be associated with GPS positions, and others can be implemented according to specific needs. It is important to keep in mind that these spatial relationships are implicitly determined by the coordinates of the elements involved; you do not necessarily have to store these values in a table as you can compute them on the fly whenever you need. Moreover, you might need different information according to the specific study (e.g. the land cover composition in an area of one kilometre around each GPS position instead of the value of the pixel where the point is located). Computing these spatial relationships on the fly can require significant time, so in some cases it is preferable to run the query just once and permanently store the most relevant parameters for your specific study (think about what you will most likely use often). Another advantage of making the relations explicit within tables is that you can then create indexes on columns of these tables. This is not possible with on-the-fly sub-queries. Making many small queries and hence creating many tables and indexing them along the way is generally more efficient in terms of processing time then trying to do everything in a long and complex query. This is not necessarily true when the data set is small enough, as indexes are mostly efficient on large tables. Sometimes, the time necessary to write many SQL statements and the associated indexes exceed the time necessary to execute them. In that case, it might be more efficient to write a single, long, and complex statement and forget about the indexes. This does not apply to the following trigger function, as all the ecological layers were well indexed at load time and it does not rely on intermediate sub-queries of those layers. Now you use spatial SQL to populate the new columns in the main *gps\_data\_animals* table. You start uploading the code of the *comune* (table *env\_data.adm\_boundaries*) where each GPS position is located (simple intersection point-polygon):
 
+```sql
+UPDATE
+ main.gps_data_animals
+SET
+ pro_com = adm_boundaries.pro_com
+FROM 
+ env_data.adm_boundaries 
+WHERE 
+ ST_Intersects(gps_data_animals.geom,adm_boundaries.geom);
+```
+
+Now you calculate and update the land cover class for each GPS position from the Corine Land Cover layer (which is stored in the *3035* spatial reference system, therefore a reprojection with *ST\_Transform* is required in order to have both layers in the same reference system):
+
+```sql
+UPDATE 
+ main.gps_data_animals
+SET
+ corine_land_cover_code = ST_Value(rast,ST_Transform(geom,3035)) 
+FROM 
+ env_data.corine_land_cover 
+WHERE 
+ ST_Intersects(ST_Transform(geom,3035), rast);
+```
+
+You intersect GPS locations with the digital elevation model (raster) to obtain the altitude of each point:
+
+```sql
+UPDATE 
+ main.gps_data_animals
+SET
+ altitude_srtm = ST_Value(rast,geom) 
+FROM 
+ env_data.srtm_dem 
+WHERE 
+ ST_Intersects(geom, rast);
+```
+
+To identify the closest meteorological stations to each GPS locations, you have to calculate the distance from locations to all the stations, order by the distance and then limit the result to the first record:
+
+```sql
+UPDATE 
+ main.gps_data_animals
+SET
+ station_id = sub.station_id
+FROM (SELECT distinct on (gps_data_animals.gps_data_animals_id)
+	gps_data_animals.gps_data_animals_id, 
+	meteo_stations.station_id::integer 
+  FROM 
+	main.gps_data_animals,
+	env_data.meteo_stations
+  ORDER BY 
+	gps_data_animals_id,
+	ST_DistanceSpheroid(meteo_stations.geom, gps_data_animals.geom,
+                     'SPHEROID["WGS 84",6378137,298.257223563]')) sub
+WHERE
+ gps_data_animals.geom IS NOT NULL
+AND sub.gps_data_animals_id = gps_data_animals.gps_data_animals_id;
+```
+
+The final column that you have to update is the distance to the closest road (note that this update can take several minutes):
+
+```sql
+UPDATE 
+ main.gps_data_animals
+SET
+ roads_dist = sub.dist
+FROM
+ (SELECT distinct on (gps_data_animals.gps_data_animals_id)
+	gps_data_animals.gps_data_animals_id, 
+	ST_Distance(gps_data_animals.geom::geography, roads.geom::geography)::integer dist
+ FROM 
+ 	main.gps_data_animals,
+ 	env_data.roads 
+ where gps_data_animals.geom is not null
+ ORDER BY 
+	gps_data_animals.gps_data_animals_id,
+	ST_distance(gps_data_animals.geom::geography, roads.geom::geography)) sub
+WHERE sub.gps_data_animals_id = gps_data_animals.gps_data_animals_id;
+```
 
 ## <a name="c_2.9"></a>2.9 Data quality: how to detect and manage outliers
 
+Tracking data can potentially be affected by a large set of errors in different steps of data acquisition and processing, involving malfunctioning or dis-performance of the sensor device that may affect measurement, acquisition and recording; dis-performance of transmission hardware or lack of transmission network or physical conditions; errors in data handling and processing. Erroneous location data can substantially affect analysis related to ecological or conservation questions, thus leading to biased inference and misleading wildlife management/conservation indications. Nature of localization error is variable, but whatever the source and type of errors, they have to be taken into account. Indeed, data quality assessment is a key step in data management.  
+In this lesson we especially deal with biased locations, or wrong locations. While in some cases incorrect data are evident, in many situations it is not possible to clearly identify locations as outliers because although they are suspicious (e.g. long distances covered by animals in a short time or repeated extreme values), they might still be correct, leaving a margin of uncertainty.  
+On the other side, the definition of outliers depends on how you define 'outlier' which can depend on the specific analysis. Here you will focus on impossible locations that are clearly caused by errors. 
+In the exercise presented in this section, different potential errors are identified. A general approach to managing outliers is proposed that tag records rather than deleting them. According to this approach, practical methods to find and mark errors are illustrated.
 
+The following are some of the main errors that can potentially affect data acquired from GPS sensors:
 
+*  Missing records. This means that no information (not even the acquisition time) has been received from the sensor, although it was planned by the acquisition schedule.
+*  Records with missing coordinates. In this case, there is a GPS failure probably due to bad GPS coverage or canopy closure. In this case the information on acquisition time is still valid, even if no coordinates are provided. This correspond to 'fix rate' error (see special topic).
+*  Multiple records with the same acquisition time. This has no physical meaning and is a clear error. The main problem here is to decide which record (if any) is correct.
+*  Records that contain different values when acquired using different data transfer procedures (e.g. direct download from the sensor through a cable vs. data transmission through the GSM network).
+*  Records erroneously attributed to an animal because of inexact deployment information. This case is frequent and is usually due to an imprecise definition of the deployment time range of the sensor on the animal. A typical result are locations in the scientist's office first followed by a trajectory along the road to the point of capture.
 
+Below, the type of errors that can be classified as GPS location bias, i.e. due to a malfunctioning of the GPS sensor that leads to locations with low accuracy.
 
+*  Records located outside the study area. In this case coordinates are incorrect (probably due to malfunctioning of the GPS sensor) and outliers appear very far from the other (valid) locations. This is a special case of impossible movements where the erroneous location is detected even with a simple visual exploration. This can be considered an 'extreme case' of location bias, in terms of accuracy (see special topic).
+*  Records located in impossible places. This might include (depending on species) sea, lakes, or otherwise inaccessible places. Again, the error can be attributed to GPS sensor bias.
+*  Records that imply impossible movements (e.g. very long displacements, requiring movement at a speed impossible for the species). In this case some assumptions on the movement model must be done (e.g. maximum speed).
+*  Records that imply improbable movements. In this case, although the movement is physically possible according to the threshold defined, the likelihood of the movement is so low that it raises serious doubt about its reliability. Once the location is tagged as suspicious, analysts can decide whether should be considered in specific analyses.
 
+GPS sensors usually record other ancillary information that can vary according to vendors and models. Detection of errors in the acquisition of this attributes is not treated here. Examples are the number of satellites used to estimate the position, the dilution of precision (DOP), the temperatures as measured by the sensor associated with the GPS, and the altitude estimated by the GPS. Temperature is measured close to the body of the animal, while altitude is not measured on the geoid but as the distance from the center of the Earth, thus in both cases the measure is affected by large errors.
 
+A source of uncertainty associated with GPS data is the positioning error of the sensor. GPS error can be classified as bias (i.e. average distance between the 'true location' and the estimated location, where the average value represents the accuracy while the measure of dispersion of repeated measures represents the precision) and fix rate, or the proportion of expected fixes (i.e. those expected according to the schedule of positioning that is programmed on the GPS unit) compared to the number of fixes actually obtained. Both these types of errors are related to several factors, including collar brand, orientation, fix interval (e.g. cold/warm or hot start), and topography and canopy closure. Unfortunately, the relationship between animals and the latter two factors is the subject of a fundamental branch of spatial ecology habitat selection studies. In extreme synthesis, habitat selection models establish a relationship between the habitat used by animals(estimated by acquired locations) vs. available proportion of habitat (e.g., random locations throughout study area or home range). Therefore, a habitat-biased proportion of fixes due to instrumental error may hamper the inferential powers of habitat selection models. A series of solutions have been proposed. Among others, a robust methodology is the use of spatial predictive models for the probability of GPS acquisition, usually based on dedicated local tests, the so called Pfix. Data can then be weighted by the inverse of Pfix, so that positions taken in difficult-to-estimate locations are weighted more. In general, it is extremely important to account for GPS bias, especially in resource selection models.
 
+### A general approach to the management of erroneous locations</h3>
 
+Once erroneous records are detected, the suggested approach is to keep a copy of all the information as it comes from the sensors (in *gps_data* table), and then mark records affected by each of the possible errors using different tags in the table where locations are associated with animals (*gps_data_animals*). Records should never be deleted from the data set even when they are completely wrong, for the following reasons:
 
+*  If you detect errors with automatic procedures, it is always a good idea to be able to manually check the results to be sure that the method performed as expected, which is not possible if you delete the records. For example, records with missing coordinates are important to determine the fix rate error and therefore models to account for this errors.
+*  If you delete a record, whenever you have to re-synchronize your data set with the original source, you will reintroduce the outlier, particularly for erroneous locations that cannot be automatically detected.
+*  A record can have some values that are wrong (e.g. coordinates), but others that are valid and useful (e.g. timestamp).
+*  The fact that the record is an outlier is valuable information that you do not want to lose (e.g. you might want to know the success rate of the sensor according to the different types of errors).
+*  It is important to differentiate missing locations (no data from sensor) from data that were received but erroneous for another reason (incorrect coordinates). The difference between these two types of error is substantial.
+*  It is often difficult to determine unequivocally that a record is wrong, because this decision is related to assumptions about the species' biology. If all original data are kept, criteria to identify outliers can be changed at any time.
+*  What looks useless in most cases (e.g. records without coordinates) might be very useful in other studies that were not planned when data were acquired and screened.
+*  Repeated erroneous data is a fairly reliable clue that a sensor is not working properly, and you might use this information to decide whether and when to replace it.
 
+In the following examples, you will explore the location data set hunting for possible errors. First, you will create a field in the GPS data table where you can store a tag associated with each erroneous or suspicious record. Then you will define a list of codes, one for each possible type of error. In general, a preliminary visual exploration of the spatial distribution of the entire set of locations can be useful for detecting the general spatial patterns of the animals' movements and evident outlier locations.
+To tag locations as errors or unreliable data, you first create a new field (*sensor_validity_code*) in the *gps_data_animals* table. At the same time, a list of codes corresponding to all possible errors must be created using a look-up table *gps_validity*, linked to the *sensor_validity_code* field with a foreign key. When an outlier detection process identifies an error, the record is marked with the corresponding tag code. In the analytical stage, users can decide to exclude all or part of the records tagged as erroneous. The evident errors (e.g. points outside the study area) can be automatically marked in the import procedure, while some other detection algorithms are better run by users when required because they imply a long processing time or might need a fine tuning of the parameters. First, add the new field to the table:
 
+```sql
+ALTER TABLE main.gps_data_animals 
+  ADD COLUMN gps_validity_code integer;
+```
+Now create a table to store the validity codes, create the external key, and insert the admitted values:
 
+```sql
+CREATE TABLE lu_tables.lu_gps_validity(
+  gps_validity_code integer,
+  gps_validity_description character varying,
+  CONSTRAINT lu_gps_validity_pkey 
+    PRIMARY KEY (gps_validity_code));
+COMMENT ON TABLE lu_tables.lu_gps_validity
+IS 'Look up table for GPS positions validity codes.';
+```
 
+```sql
+ALTER TABLE main.gps_data_animals
+  ADD CONSTRAINT animals_lu_gps_validity 
+  FOREIGN KEY (gps_validity_code)
+  REFERENCES lu_tables.lu_gps_validity (gps_validity_code)
+  MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION;
+```
 
+```sql
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (0, 'Position with no coordinate');
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (1, 'Valid Position');
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (2, 'Position with a low degree of reliability');
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (11, 'Position wrong: out of the study area');
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (12, 'Position wrong: impossible spike');
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (13, 'Position wrong: impossible place (e.g. lake or sea)');
+INSERT INTO lu_tables.lu_gps_validity 
+  VALUES (21, 'Position wrong: duplicated timestamp');
+```
 
+Now you can proceed with outlier detection. You can start by assuming that all the GPS positions are correct:
 
+```sql
+UPDATE main.gps_data_animals 
+  SET gps_validity_code = 1;
+```
+### Detect and mark erroneous data
 
+In this topic, you can see an example of how each kind of error can be detected with SQL and marked in the *GPS_data_animals* table.
 
+You might have a missing record when the device was programmed to acquire the position but no information (not even the acquisition time) is recorded. In this case, you can use specific functions to create 'virtual' records and, if needed, compute and interpolate values for the coordinates. The 'virtual' records should be created just in the analytical stage and not stored in the reference data set (table *gps_data_animals*).
 
+When the GPS is unable to receive sufficient satellite signal, the record has no coordinates associated. The rate of GPS failure can vary substantially, mainly according to sensor quality, terrain morphology, and vegetation cover. Missing coordinates cannot be managed as location bias, but have to be properly treated in the analytical stage depending on the specific objective, since they result in erroneous 'fix rate'. Technically, they can be excluded from the data set, or an estimated value can be calculated by interpolating the previous and next GPS positions. This is a very important issue, since several analytical methods require regular time intervals. Note that with no longitude/latitude, the spatial attribute (i.e. the *geom* field) cannot be created, which makes it easy to identify this type of error. You can mark all the GPS positions with no coordinates with the code 0:
 
+```sql
+UPDATE main.gps_data_animals 
+  SET gps_validity_code = 0 
+  WHERE geom IS NULL;
+```
 
+In some (rare) cases, you might have a repeated acquisition time (from the same acquisition source). You can detect these errors by grouping your data set by animal and acquisition time and asking for multiple occurrences. Here is an example of an SQL query to get this result:
+```sql
+SELECT 
+  x.gps_data_animals_id, x.animals_id, x.acquisition_time 
+FROM 
+  main.gps_data_animals x, 
+  (SELECT animals_id, acquisition_time 
+  FROM main.gps_data_animals
+  WHERE gps_validity_code = 1
+  GROUP BY animals_id, acquisition_time
+  HAVING count(animals_id) > 1) a 
+WHERE 
+  a.animals_id = x.animals_id AND 
+  a.acquisition_time = x.acquisition_time 
+ORDER BY 
+  x.animals_id, x.acquisition_time);
+```
 
+This query returns the id of the records with duplicated timestamps (having *count(animals_id) > 1*). In this case, you have no data affected by this error. In case there are records with this problem, the data manager has to decide what to do. You can keep one of the two (or more) GPS positions with repeated acquisition time, or tag both (all) as unreliable. The first possibility would imply a detailed inspection of the locations at fault, in order to possibly identify (with no guarantee of success) which one is correct. On the other hand, the second case is more conservative and can be automated as the user does not have to take any decision that could lead to erroneous conclusions. Removing data (or tagging them as erroneous) is often not so much a problem with GPS data sets, since you probably have thousands of locations anyway. On the other hand, keeping incorrect data could be much more of a problem and bias further analyses. However, suspicious locations, if correct, might be exactly the information needed for a specific analysis (e.g. rutting excursions). As for the other type of errors, a specific *gps_validity_code* is suggested. Here is an example (that will not affect your database as no timestamp is duplicated):
 
+```sql
+UPDATE main.gps_data_animals 
+  SET gps_validity_code = 21 
+  WHERE 
+    gps_data_animals_id in 
+      (SELECT x.gps_data_animals_id 
+      FROM 
+        main.gps_data_animals x, 
+        (SELECT animals_id, acquisition_time 
+        FROM main.gps_data_animals 
+        WHERE gps_validity_code = 1 
+        GROUP BY animals_id, acquisition_time 
+        HAVING count(animals_id) > 1) a 
+      WHERE 
+        a.animals_id = x.animals_id AND 
+        a.acquisition_time = x.acquisition_time;
+```
+
+It may happen that data are obtained from sensors through different data transfer processes. A typical example is data received in near real time through a GSM network and later downloaded directly via cable from the sensor when it is physically removed from the animal. If the information is different, it probably means that an error occurred during data transmission. In this case, it is necessary to define a hierarchy of reliability for the different sources (e.g. data obtained via cable download are better than those obtained via the GSM network). This information should be stored when data are imported into the database into *gps_data* table. Then, when valid data are to be identified, the 'best' code should be selected, paying attention to properly synchronize *gps_data* and *gps_data_animals*. Which specific tools will be used to manage different acquisition sources largely depends on the number of sensors, frequency of updates, and desired level of automation of the process. No specific examples are provided here.
+
+Records erroneously attributed to animals usually occurs for the first and/or last GPS positions because the start and end date and time of the sensor deployment is not correct. The consequence is that the movements of the sensor before and after the deployment are attributed to the animal. It may be difficult to trap this error with automatic methods because incorrect records can be organized in spatial clusters with a (theoretically) meaningful pattern (the set of erroneous GPS positions has a high degree of spatial autocorrelation as it contains 'real' GPS positions of 'real' movements, although they are not animal's movements). It is important to stress that this kind of pattern, e.g. GPS positions repeated in a small area where the sensor is stored before the deployment (researcher's office) and then a long movement to where the sensor is deployed on the animal, can closely resemble the sequence of GPS positions for animals just released in a new area. To identify this type of error, the suggested approach is to visually explore the data set in a GIS desktop interface. Once you detect this situation, you should check the source of information on the date of capture and sensor deployment and, if needed, correct the information in the table *gps_sensors_animals* (this will automatically update the table *gps_data_animals*). In general, a visual exploration of your GPS data sets, using as representation both points and trajectories, is always useful to help identify unusual spatial patterns. For this kind of error no *gps_validity_code* are used because, once detected, they are automatically excluded from the table *gps_data_animals*. The best method to avoid this type of error is to get accurate and complete information about the deployment of the sensors on the animals, for example verifying not just the starting and ending date, but also the time of the day and time zone. Special attention must be paid to the end of the deployment. For active deployments, no end is defined. In this case, the procedure can make use of the function now() to define a dynamic upper limit when checking the timestamp of recorded locations (i.e. the record is not valid if *acquisition_time > now()*).
+
+The next types of error can all be connected to GPS sensor malfunctioning or dis-performance, leading to biased locations with low accuracy, or a true wrong location, i.e. coordinates which are distant or very distant from the 'true location'.
+
+When the error of coordinates is due to reasons not related to general GPS accuracy (which will almost always be within a few dozen meters), the incorrect positions are often quite evident as they are usually very far from the others (a typical example is the inversion of longitude and latitude). At the same time, this error is random, so erroneous GPS positions are hardly grouped in spatial clusters. When a study area has defined limits (e.g. fencing or natural boundaries), the simplest way to identify incorrect GPS positions is to run a query that looks for those that are located outside these boundaries (optionally, with an extra buffer area). If animals have no constraints to their movements, but they are still limited to a specific area (e.g. an island), you can delineate a very large boundary so that at least GPS positions very far outside this area are captured. In this case it is better to be conservative and enlarge the study area as much as possible to exclude all the valid GPS positions. Other, more fine-tuned methods can be used at a later stage to detect the remaining erroneous GPS positions. This approach has the risk of tagging correct locations if the boundaries are not properly set, as the criteria are very subjective. It is important to note that erroneous locations will be removed in any case as impossible movements (see next sections). This step can be useful in cases where you don't have access to movement properties (e.g. VHF data with only one location a week). Another element to keep in mind, especially in the case of automatic procedures to be run in real time on the data flow, is that very complex geometries (e.g. a coastline drawn at high spatial resolution) can slow down the intersection queries. In this case, you can exploit the power of spatial indexes and/or simplify your geometry. Here is an example of an SQL query that detects outliers outside the boundaries of the *study_area* layer, returning the IDs of outlying records:
+```sql
+SELECT 
+  gps_data_animals_id 
+FROM 
+  main.gps_data_animals 
+LEFT JOIN 
+  env_data.study_area 
+ON 
+  ST_Intersects(gps_data_animals.geom, study_area.geom) 
+WHERE 
+  study_area IS NULL AND 
+  gps_data_animals.geom IS NOT NULL;
+```
+The result shows the list of the GPS positions that fall outside the study area and that deserve a more accurate analysis to determine whether they are outliers. Now tag the GPS positions as erroneous (validity code 11, i.e. *Position wrong: out of the study area*):
+
+```sql
+UPDATE main.gps_data_animals 
+  SET gps_validity_code = 11 
+  WHERE 
+    gps_data_animals_id in 
+    (SELECT gps_data_animals_id 
+    FROM main.gps_data_animals, env_data.study_area 
+    WHERE not ST_Intersects(gps_data_animals.geom, study_area.geom));
+```
+
+Using a simpler approach, another quick way to detect these errors is to order GPS positions according to their longitude and latitude coordinates. The outliers are immediately visible as their values are completely different from the others and they pop up at the beginning of the list. An example of this kind of query is:
+
+```sql
+SELECT 
+  gps_data_animals_id, ST_X(geom) 
+FROM 
+  main.gps_data_animals 
+WHERE 
+  geom IS NOT NULL 
+ORDER BY 
+  ST_X(geom) 
+LIMIT 10;
+```
+The resulting data set is limited to 10 records, as just a few GPS positions are expected to be affected by this type of error. The same query can then be repeated in reverse order, and then doing the same for latitude:
+
+```sql
+SELECT gps_data_animals_id, ST_X(geom) 
+FROM main.gps_data_animals 
+WHERE geom IS NOT NULL 
+ORDER BY ST_X(geom) 
+DESC LIMIT 10;
+```
+
+```sql
+SELECT gps_data_animals_id, ST_Y(geom) 
+FROM main.gps_data_animals 
+WHERE geom IS NOT NULL 
+ORDER BY ST_Y(geom) 
+LIMIT 10;
+```
+
+```sql
+SELECT gps_data_animals_id, ST_Y(geom) 
+FROM main.gps_data_animals 
+WHERE geom IS NOT NULL 
+ORDER BY ST_Y(geom) DESC 
+LIMIT 10;
+```
+
+When there are areas not accessible to animals because of physical constraints (e.g. fencing, natural barriers) or environments not compatible with the studied species (lakes and sea, or land, according to the species), you can detect GPS positions that are located in those areas where it is impossible for the animal to be. Therefore, the decision whether to mark or not the locations as incorrect is based on ecological assumptions (i.e., non-habitat). For this kind of control, you must use land cover layerswith a spatial resolution and accuracy comparable to those of GPS positions. Thus, at a minimum, a further visual check in a GIS environment is always recommended.
+
+### Update of spatial views to exclude erroneous locations
+
+As a consequence of the outlier tagging approach illustrated in these pages, views based on the GPS positions data set should exclude the incorrect points, adding a *gps_validity_code = 1* criteria (corresponding to GPS positions with no errors and valid geometry) in their WHERE conditions.
+
+First, you update the view *analysis.view_convex_hulls*:
+
+```sql
+CREATE OR REPLACE VIEW analysis.view_convex_hulls AS 
+SELECT 
+  gps_data_animals.animals_id,
+  ST_ConvexHull(ST_Collect(gps_data_animals.geom))::geometry(Polygon,4326) AS geom
+FROM 
+  main.gps_data_animals
+WHERE 
+  gps_data_animals.gps_validity_code = 1
+GROUP BY 
+  gps_data_animals.animals_id
+ORDER BY 
+  gps_data_animals.animals_id;
+```
+You do the same for *analysis.view_gps_locations*:
+
+```sql
+CREATE OR REPLACE VIEW analysis.view_gps_locations AS 
+SELECT 
+  gps_data_animals.gps_data_animals_id,
+  gps_data_animals.animals_id, 
+  animals.name, 
+  timezone('UTC'::text, gps_data_animals.acquisition_time) AS time_utc, 
+  animals.sex, 
+  lu_age_class.age_class_description, 
+  lu_species.species_description, 
+  gps_data_animals.geom
+FROM 
+  main.gps_data_animals, 
+  main.animals, 
+  lu_tables.lu_age_class, 
+  lu_tables.lu_species
+WHERE 
+  gps_data_animals.animals_id = animals.animals_id AND
+  animals.age_class_code = lu_age_class.age_class_code AND 
+  animals.species_code = lu_species.species_code AND 
+  gps_data_animals.gps_validity_code = 1;
+```
+Now repeat the same operation for *analysis.view_trajectories*:
+```sql
+CREATE OR REPLACE VIEW analysis.view_trajectories AS 
+SELECT 
+  sel_subquery.animals_id,
+  st_MakeLine(sel_subquery.geom)::geometry(LineString,4326) AS geom
+FROM 
+  (SELECT 
+    gps_data_animals.animals_id, 
+    gps_data_animals.geom, 
+    gps_data_animals.acquisition_time
+  FROM main.gps_data_animals
+  WHERE gps_data_animals.gps_validity_code = 1
+  ORDER BY gps_data_animals.animals_id, gps_data_animals.acquisition_time) sel_subquery
+GROUP BY sel_subquery.animals_id;
+```
 
 ## <a name="c_2.10"></a>2.10 Data export 
-There are different ways to export a table or the results of a query to an external file. One is to use the command **[COPY (TO)](http://www.postgresql.org/docs/devel/static/sql-copy.html)**. `COPY TO` (similarly to what happens with the command `COPY FROM` used to import data) with a file name directly write the content of a table or the result of a query to a file, for example in .csv format. The file must be accessible by the PostgreSQL user (i.e. you have to check the permission on target folder by the user ID the PostgreSQL server runs as) and the name (path) must be specified from the viewpoint of the server. This means that files can be read or write only in folders 'visible' to the database servers. If you want to remotely connect to the database and save data into your local machine, you should use the command **[\COPY](http://www.postgresql.org/docs/devel/static/app-psql.html#APP-PSQL-META-COMMANDS-COPY)** instead. It performs a frontend (client) copy. `\COPY` is not an SQL command and must be run from a PostgreSQL interactive terminal **[PSQL](http://www.postgresql.org/docs/devel/static/app-psql.html)**. This is an operation that runs an SQL COPY command, but instead of the server reading or writing the specified file, PSQL reads or writes the file and routes the data between the server and the local file system. This means that file accessibility and privileges are those of the local user, not the server, and no SQL superuser privileges are required. 
+There are different ways to export a table or the results of a query to an external file. One is to use the command **[COPY (TO)](http://www.postgresql.org/docs/devel/static/sql-copy.html)**. `COPY TO` (similarly to what happens with the command `COPY FROM` used to import data) with a file name directly write the content of a table or the result of a query to a file, for example in .csv format. The file must be accessible by the PostgreSQL user (i.e. you have to check the permission on target folder by the user ID the PostgreSQL server runs as) and the name (path) must be specified from the viewpoint of the server. This means that files can be read or write only in folders 'visible' to the database servers. If you want to remotely connect to the database and save data into your local machine, you should use the command **[\COPY](http://www.postgresql.org/docs/devel/static/app-psql.html#APP-PSQL-META-COMMANDS-COPY)** instead. It performs a frontend (client) copy. `\COPY` is not an SQL command and must be run from a PostgreSQL interactive terminal **[PSQL](http://www.postgresql.org/docs/devel/static/app-psql.html)**. This is an operation that runs an SQL COPY command, but instead of the server reading or writing the specified file, PSQL reads or writes the file and routes the data between the server and the local file system. This means that file accessibility and privileges are those of the local user, not the server, and no SQL superuser privileges are required.  
 Another possibility to export data is to use the pgAdmin interface: in the SQL console select `Query/Execute to file`, the results will be saved to a local file instead of being visualized. Other database interfaces have similar tools. This can be applied to any query.
 For spatial data, the easiest option is to load the data in QGIS and then save as shapefile (or any other format) on your computer.
 
@@ -1218,7 +1426,7 @@ For spatial data, the easiest option is to load the data in QGIS and then save a
 Once your database is populated and used for daily work, it is a *really* good idea to routinely make a safe copy of your data. Since the RDBMS maintains data in a binary format which is not meant to be tampered with, we need to `dump` the database content in a format suitable for being later restored if it needs be. The very same dump could also be used for replicating the database contents on another server.
 From pgAdmin, the operation of making a database dump is extremely simple: right click the database and choose `Backup`.
 There are a few output formats, apart from the default `Custom` one. With `Plain` the file will be plain (readable) SQL commands that can be opened (and edit, if needed) with a text editor (e.g. Notepad++). `Tar` will generate a compressed file that is convenient if you have frequent backups and you want to maintain an archive. For more info, see the docs on **[backup and restore](http://www.postgresql.org/docs/current/static/backup-dump.html)** for further information.  
-If you want to automatically generate a backup of your database, you can create a bash script and schedule its execution on your server with the desired frequency. Here an example on a Windows server:
+If you want to automatically generate a backup of your database, you can create a bash script and schedule its execution on your server with the desired frequency. Here an example of a batch file on a Windows server:
 
 ```
 @echo off
@@ -1243,5 +1451,7 @@ If you have tables that change frequently and others that remain unchanged for l
 1.  Calculate number of locations per animal per month
 2.  Calculate average distance per animal per month
 3.  Find animals at same place at the same time
-4.  Find locations of an animal in the home range (convex hulls) of another animal
-5.  Calculate percentage of location per land cover type per animal
+4.  Find how many locations falls in the home range (convex hulls) of another animal
+6.  Find the GPS position stored in the database that is closest to the city of Trento
+7.  Is the average distance covered between 8 p.m. and 8 a.m smaller or bigger than the average distance covered between 8 a.m. and 8 p.m?
+8.  Is the average distance covered in winter smaller or bigger than in summer?
