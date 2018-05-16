@@ -154,6 +154,8 @@ specific records. In this casee would use `DISTINCT` to squash duplicate values,
 SELECT DISTINCT ccc FROM www;
 ```
 
+Create a view that returns, for each animal, the number of non null locations, the number of null locations, and the start and end date of the deployment.
+
 ## <a name="c_1.7"></a>1.7 LIKE
 ## <a name="c_1.8"></a>1.8 GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)
 ## <a name="c_1.9"></a>1.9 HAVING

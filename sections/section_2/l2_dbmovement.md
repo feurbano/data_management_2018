@@ -12,8 +12,8 @@
 * **[2.10 Data export](#c_2.10)**
 * **[2.11 Database maintenance](#c_2.11)**
 * **[2.12 Recap exercises](#c_2.12)**
-* **[2.13 Raster Data in PostGIS (demo)](https://github.com/feurbano/data_management_2018/blob/master/sections/section2/l2.13_raster.md)**
-* **[2.14 Functions and triggers (supplementary material](https://github.com/feurbano/data_management_2018/blob/master/sections/section2/l2.14_supplementary.md)**
+* **[2.13 Raster Data in PostGIS (demo)](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.13_raster.md)**
+* **[2.14 Functions and triggers (supplementary material)](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.14_supplementary.md)**
 
 
 ## <a name="c_2.1"></a>2.1 Introduction
@@ -158,7 +158,7 @@ This will change the *datastyle* for the current session only. If you want to ch
 
 PgAdmin offers the possibility to import data (including local data to a server) with a graphical interface (right click on the table, and select *Import* setting all the proper parameters and options). 
 
-#### Exercise
+##### Exercise
 
 1. Import into the database the raw GPS data from the test sensors:
   -   GSM01508
@@ -181,11 +181,11 @@ UPDATE main.gps_data
   SET acquisition_time = (utc_date + utc_time) AT TIME ZONE 'UTC';
 ```
 
-#### Exercise
-1. Find the temporal duration of the dataset for each animal
+##### Exercise
+1. Find the temporal duration of the dataset for each animal  
 *Hint: get the minimum and maximum value of acquisition time for each animal and then make the difference to have the interval*
 
-2. Retrieve data from the collar **GSM01512** during the month of May (whatever the year), and order them by their acquisition time
+2. Retrieve data from the collar **GSM01512** during the month of May (whatever the year), and order them by their acquisition time  
 *Hint: use extract (month ...) to set the criteria on month*
 
 ### Indexes
@@ -276,17 +276,17 @@ In this lesson, you will extend your database with two new tables to integrate a
 ### The world in a database: database data models
 A data model describes what types of data are stored and how they are organized. It can be seen as the conceptual representation of the real world in the database structures that include data objects (i.e. tables) and their mutual relationships. In particular, data modelling becomes a key step when database systems grow in size and complexity, and user requirements become more sophisticated: it permits easy updates and modification and adaptation of the database structure to accommodate the changing goals, constraints, and spatial scales of studies and the evolution of wildlife tracking systems. Without a rigorous data modelling approach, an information system might lose the flexibility to manage data efficiently in the long term, reducing its utility to a simple storage device for raw data, and thus failing to address many of the necessary requirements.
 
-To model data properly, you have to clearly state the biological context of your study. A logical way to proceed is to define (**a**) very basic questions on the sample unit, i.e. individual animals and (**b**) basic questions about data collection. **a**) Typically, individuals are the sampling units of an ecological study based on wildlife tracking. Therefore, the first question to be asked while modelling the data is: *What basic biological information is needed to characterise individuals as part of a sample?* Species, sex and age (or age class) at capture are the main factors which are relevant in all studies. Age classes typically depend on the species. Moreover, age class is not constant for all the GPS positions. The correct age class at any given moment can be derived from the age class at capture and then defining rules that specify when the individual change from a class to another (for roe deer, you might assume that at 1st April of every year each individual that was a fawn becomes a yearling, and each yearling becomes an adult). Other information used to characterise individuals could be specific to a study, for example in a study on spatial behaviour of translocated animals, 'resident' or 'translocated' is an essential piece of information linked to individual animals. All these elements should be described in specific tables. **b**) A single individual becomes a 'studied unit' when it is fitted with a sensor, in this case to collect position information. First of all, GPS sensors should be described by a dedicated table containing the technical characteristics of each device (e.g. vendor, model). Capture time, or 'device-fitting' time, together with the time and a description of the end of the deployment (e.g. drop-off of the tag, death of the animal), are also essential to the model. The link between the sensors and the animals should be described in a table that states unequivocally when the data collected from a sensor 'become' (and cease to be) bio-logged data, i.e. the period during which they refer to an individual's behaviour. The start of the deployment usually coincides with the moment of capture, but it is not the same thing. Indeed, moment of capture can be the 'end' of one relationship between a sensor and an animal (i.e. when a device is taken off an animal) and at the same time the 'beginning' of another (i.e. another device is fitted instead).
+To model data properly, you have to clearly state the biological context of your study. A logical way to proceed is to define (**a**) very basic questions on the sample unit, i.e. individual animals and (**b**) basic questions about data collection. **a**) Typically, individuals are the sampling units of an ecological study based on wildlife tracking. Therefore, the first question to be asked while modelling the data is: *What basic biological information is needed to characterise individuals as part of a sample?* Species, sex and age (or age class) at capture are the main factors which are relevant in all studies. Age classes typically depend on the species. Moreover, age class is not constant for all the GPS positions. The correct age class at any given moment can be derived from the age class at capture and then defining rules that specify when the individual change from a class to another (for roe deer, you might assume that at 1st April of every year each individual that was a fawn becomes a yearling, and each yearling becomes an adult). Other information used to characterise individuals could be specific to a study, for example in a study on spatial behaviour of translocated animals, 'resident' or 'translocated' is an essential piece of information linked to individual animals. All these elements should be described in specific tables. **b**) A single individual becomes a 'studied unit' when it is fitted with a sensor, in this case to collect position information. First of all, GPS sensors should be described by a dedicated table containing the technical characteristics of each device (e.g. vendor, model). Capture time, or 'device-fitting' time, together with the time and a description of the end of the deployment (e.g. drop-off of the tag, death of the animal), are also essential to the database data model. The link between the sensors and the animals should be described in a table that states unequivocally when the data collected from a sensor 'become' (and cease to be) bio-logged data, i.e. the period during which they refer to an individual's behaviour. The start of the deployment usually coincides with the moment of capture, but it is not the same thing. Indeed, moment of capture can be the 'end' of one relationship between a sensor and an animal (i.e. when a device is taken off an animal) and at the same time the 'beginning' of another (i.e. another device is fitted instead).
 
 Thanks to the tables 'animals', 'sensors' and 'sensors to animals', and the relationships built among them, GPS data can be linked unequivocally to individuals, i.e. the sampling units.
 
-Some information related to animals can change over time. Therefore, they must be marked with the reference time that they refer to. Examples of typical parameters assessed at capture are age and positivity of association to a disease. Translocation may also coincide with the capture/release time. If this information changes over time according to well-defined rules (e.g. transition from age classes), their value can be dynamically calculated in the database at different moments in time (e.g. using database functions). In one of the next lessons, you will see an example of a function to calculate age class from the information on the age class at capture and the acquisition time of GPS positions for roe deer. The basic structure based on the elements *animals*, *sensors*, *sensors to animals*, and, of course, *position data*, can be extended to take into account the specific goals of each project, the complexity of the real-world problems faced, the technical environment, and the available data. Examples of data that can be integrated are capture methodology, handling procedure, use of tranquilizers and so forth, that should be described in a 'captures' table linked to the specific individual (in the table 'animals'). Finally, data referring to individuals may come from several sources, e.g. several sensors or visual observations. In all these cases, the link between data and sample units (individuals) should also be clearly stated by appropriate relationships. In complex projects, especially those involving field data collection in parallel with remote tracking, and involve multiple species/sensor types, databases can quickly get complex and grow up to hundreds of tables.
+Some information related to animals can change over time. Therefore, they must be marked with the reference time that they refer to. Examples of typical parameters assessed at capture are age and positivity of association to a disease. Translocation may also coincide with the capture/release time. If this information changes over time according to well-defined rules (e.g. transition from age classes), their value can be dynamically calculated in the database at different moments in time (e.g. using database functions). In one of the next lessons, you will see an example of a function to calculate age class from the information on the age class at capture and the acquisition time of GPS positions for roe deer. The core structure based on the elements *animals*, *sensors*, *sensors to animals*, and, of course, *position data*, can be extended to take into account the specific goals of each project, the complexity of the real-world problems faced, the technical environment, and the available data. Examples of data that can be integrated are capture methodology, handling procedure, use of tranquilizers and so forth, that should be described in a 'captures' table linked to the specific individual (in the table 'animals'). Finally, data referring to individuals may come from several sources, e.g. several sensors or visual observations. In all these cases, the link between data and sample units (individuals) should also be clearly stated by appropriate relationships. In complex projects, especially those involving field data collection in parallel with remote tracking, and involve multiple species/sensor types, databases can quickly get complex and grow up to hundreds of tables.
 
 The design of the database data model is an exercise that must be performed at the very initial stage of the creation of a database. Once the objects (and objectives) of a study are identified and described (see above), some tools exist to graphically translates the conceptual model into connected tables, each of them representing a specific entity of the world. This process is not trivial and force biologists to "formalize" their goals, data and scientific approach (which also helps to organize the whole data collection in a systematic and consistent way). For example, at the beginning of a tracking study, it is easy to assume that a tag (i.e. a collar) can be identified with the animal where it is deployed, creating a single table. Later on, it happens very often that the same collar is reused on other animals, thus making a data model based on a single animal-collar table unsuitable. Changing a database on and advanced stage of development is very complicate and requires by far more times than a carefully planned phase of data modelling at the start of the project.
 
 A very popular graphical tool to represent a data model is the **[Entity-Relationship Diagram (ERD)](https://en.wikipedia.org/wiki/Entity%E2%80%93relationship_model)** that helps to show the relationship between elements, concepts or events of a system and that can be used as the foundation for a relational database.
 
-In the figure below, it is illustrated the schema of the database structure created at the end of this and the next lessons.
+In the figure below, it is illustrated the schema of the database structure that you are going to create.
 
 <p align="center">
 <img src="https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/images/schema-db.png" Height="450"/>
@@ -510,21 +510,11 @@ WHERE
   lu_age_class.age_class_code = animals.age_class_code 
 ```
 
-#### Exercise
+##### Exercise
 
 1.  Query the table *main.animals* including the information on the sex and the species (with the name of the species stored in the look up table)
-2.  Modify the field *vendor* in the table *main.gps\_sensors* to limit the possible values to: 'Vectronic Aerospace GmbH', 'Sirtrack' and 'Lotek', then try to insert a vendor not in the list.
+2.  Force the field *vendor* in the table *main.gps\_sensors* to limit the possible values to: 'Vectronic Aerospace GmbH', 'Sirtrack' and 'Lotek', then try to insert a vendor not in the list.
 3.  How would you extend the database to include information on mortality (date and type of death)
-4.  Design a general schema of a possible database extension (i.e. table(s) and their links) to include information on capture and particularly on:
-    -   date and time of the capture (note that the same animal can be captured more than once)
-    -   location of capture
-    -   capture method
-    -   person who captured the animal
-    -   if the animal was collared, in this case include the code of the collar
-    -   the name/id of the animal
-    -   body temperature (note that temperature can be measured more than once at the different stages of the capture).
-
-
 
 
 ## <a name="c_2.5"></a>2.5 From data to information: associating locations to animals
@@ -709,8 +699,6 @@ Another possibility is to simultaneously create and populate the table *main.gps
 
 1.  What is the proportion of records with non-null coordinates for each animal?
 2.  Calculate the average longitude and latitude of all females.
-3.  Calculate the dates and location (latitude and longitude) of the first and last collected location per animal.
-4.  Create a view that returns, for each animal, the number of non null locations, the number of null locations, and the start and end date of the deployment.
 
 ## <a name="c_2.6"></a>2.6 Manage the location data in a spatial database
 A wildlife tracking data management system must include the capability to explicitly deal with the spatial component of movement data. GPS tracking data are sets of spatio-temporal objects (locations) and the spatial component must be properly handled. You will now extend the database adding spatial functionalities through the PostgreSQL spatial extension called PostGIS. PostGIS introduces the spatial data types (both vector and raster) and a large set of SQL spatial functions and tools, including spatial indexes. This possibility essentially allows you to build a GIS using the existing capabilities of relational databases. In this lesson, you will implement a system that automatically transforms the GPS coordinates generated by GPS sensors from a pair of numbers into spatial objects.
@@ -883,8 +871,7 @@ This last view is correct only if the GPS positions are located in a relatively 
 ##### Exercise
 
 1.  Create a view of all the points of female animals, visualize it in QGIS and export as shapefile
-2.  Create a view with a convex hull for all the points of every month for animal 2 and visualize in QGIS to check if there is any spatial pattern
-3.  Calculate the area of the monthly convex hulls of animal 2 and verify if there is any temporal pattern
+2.  Calculate the area of the monthly convex hulls of animal 2 and verify if there is any temporal pattern
 
 
 ## <a name="c_2.8"></a>2.8 Integrating spatial ancillary information
@@ -922,28 +909,28 @@ Now you can start importing the shapefiles of the (vector) environmental layers 
 
 Finish uploading the roads and administrative boundaries shapefiles using the 'Import vector layer' tool, using the same settings as for the study area shapefile.
 
-Alternatively, a standard solution to import shapefiles (vector data) is the **[shp2pgsql](http://suite.opengeo.org/4.1/dataadmin/pgGettingStarted/shp2pgsql.html)** tool. *sph2pgsql* is an external command-line tool, which can not be run in a SQL interface as it can for a regular SQL command. The code below has to be run in a command-line interpreter (if you are using Windows as operating system, it is also called Command Prompt or MS-DOS shell). You will see other examples of external tools that are run in the same way, and it is very important to understand the difference between these and SQL commands. In these exercises, this difference is represented with a different graphic layout. Start with the meteorological stations:
+Alternatively, a standard solution to import shapefiles (vector data) is the **[shp2pgsql](http://suite.opengeo.org/4.1/dataadmin/pgGettingStarted/shp2pgsql.html)** tool. *sph2pgsql* is an external command-line tool, which can not be run in a SQL interface as it can for a regular SQL command. The code below has to be run in a command-line interpreter (if you are using Windows as operating system, it is also called Command Prompt or MS-DOS shell). You will see other examples of external tools that are run in the same way, and it is very important to understand the difference between these and SQL commands. In these exercises, this difference is represented with a different graphic layout. Start with the meteorological stations (with the code below [you might have to adapt the path], or by the QGIS GUI):
 
 ```
-> "C:\Program Files\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\meteo_stations.shp env_data.meteo_stations | "C:\Program Files\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
+> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\meteo_stations.shp env_data.meteo_stations | "C:\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
 ```
 
 Note that the path to *shp2pgsql.exe* and *psql.exe* (in this case *C:\\PostgreSQL\\9.5\\bin)* can be different according to the folder where you installed your version of PostgreSQL. If you connect to the database remotely, you also have to change the address of the server (*-h* option). In the parameters, set the reference system (option -s) and create a spatial index for the new table (option *-I*). The result of *shp2pgsql* is a text file with the SQL that generates and populates the table *env\_data.meteo\_stations*. With the symbol '|' you 'pipe' (send directly) the SQL to the database (through the PostgreSQL interactive terminal **[psql](http://www.postgresql.org/docs/devel/static/app-psql.html))** where it is automatically executed. You have to set the the port (*-p*), the name of the database (*-d*), the user (*-U*) and the password, if requested. In this way, you complete the whole process with a single command. You can refer to *shp2pgsql* documentation for more details. You might have to add the whole path to *psql* and *shp2pgsql*. This depends on the folder where you installed PostgreSQL. You can easily verify the path searching for these two files. You also have to check that the path of your shapefile (*meteo\_stations.shp*) is properly defined. You can repeat the same operation for the study area layer:
 
 ```
-> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\study_area.shp env_data.study_area | "C:\Program Files\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
+> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\study_area.shp env_data.study_area | "C:\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
 ```
 
 Next for the roads layer:
 
 ```
-> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\roads.shp env_data.roads | "C:\Program Files\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
+> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\roads.shp env_data.roads | "C:\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
 ```
 
 And for the administrative boundaries:
 
 ```
-> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\adm_boundaries.shp env_data.adm_boundaries | "C:\Program Files\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
+> "C:\PostgreSQL\9.5\bin\shp2pgsql.exe" -s 4326 -I C:\tracking_db\data\env_data\vector\adm_boundaries.shp env_data.adm_boundaries | "C:\PostgreSQL\9.5\bin\psql.exe" -p 5432 -d gps_tracking_db -U postgres -h localhost
 ```
 
 Now the shapefiles are in the database as new tables (one table for each shapefile). You can visualize them through a GIS interface (e.g. QGIS). You can also retrieve a summary of the information from all vector layers available in the database with the following command:
@@ -1071,32 +1058,6 @@ FROM
  env_data.adm_boundaries 
 WHERE 
  ST_Intersects(gps_data_animals.geom,adm_boundaries.geom);
-```
-
-Now you calculate and update the land cover class for each GPS position from the Corine Land Cover layer (which is stored in the *3035* spatial reference system, therefore a reprojection with *ST\_Transform* is required in order to have both layers in the same reference system):
-
-```sql
-UPDATE 
- main.gps_data_animals
-SET
- corine_land_cover_code = ST_Value(rast,ST_Transform(geom,3035)) 
-FROM 
- env_data.corine_land_cover 
-WHERE 
- ST_Intersects(ST_Transform(geom,3035), rast);
-```
-
-You intersect GPS locations with the digital elevation model (raster) to obtain the altitude of each point:
-
-```sql
-UPDATE 
- main.gps_data_animals
-SET
- altitude_srtm = ST_Value(rast,geom) 
-FROM 
- env_data.srtm_dem 
-WHERE 
- ST_Intersects(geom, rast);
 ```
 
 To identify the closest meteorological stations to each GPS locations, you have to calculate the distance from locations to all the stations, order by the distance and then limit the result to the first record:
@@ -1452,6 +1413,14 @@ If you have tables that change frequently and others that remain unchanged for l
 2.  Calculate average distance per animal per month
 3.  Find animals at same place at the same time
 4.  Find how many locations falls in the home range (convex hulls) of another animal
-6.  Find the GPS position stored in the database that is closest to the city of Trento
-7.  Is the average distance covered between 8 p.m. and 8 a.m smaller or bigger than the average distance covered between 8 a.m. and 8 p.m?
-8.  Is the average distance covered in winter smaller or bigger than in summer?
+5.  Find the GPS position stored in the database that is closest to the city of Trento
+6.  Is the average distance covered between 8 p.m. and 8 a.m smaller or bigger than the average distance covered between 8 a.m. and 8 p.m?
+7.  Is the average distance covered in winter smaller or bigger than in summer?
+8.  Design a general schema of a possible database extension (i.e. table(s) and their links) to include information on capture and particularly on:
+    -   date and time of the capture (note that the same animal can be captured more than once)
+    -   location of capture
+    -   capture method
+    -   person who captured the animal
+    -   if the animal was collared, in this case include the code of the collar
+    -   the name/id of the animal
+    -   body temperature (note that temperature can be measured more than once at the different stages of the capture).

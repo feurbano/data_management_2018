@@ -5,7 +5,7 @@ This repository stores the lessons and presentations of the course **Dealing wit
 * **[Schedule](https://github.com/feurbano/data_management_2018/blob/master/schedule.md)**
 * Section 0: **[Introduction to Data Management](https://github.com/feurbano/data_management_2018/tree/master/sections/section_0)**
 * Section 1: **[SQL and Spatial SQL](https://github.com/feurbano/data_management_2018/tree/master/sections/section_1)**
-* Section 2: **[Movement Ecology Data Management](https://github.com/feurbano/data_management_2018/tree/master/sections/section_2)**
+* Section 2: **[Movement Ecology Data Management](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2_dbmovement.md)**
 * Section 3: **[Movement Ecology Data Analysis in R](https://github.com/feurbano/data_management_2018/tree/master/sections/section_3)**
 * Section 4: **[From Population Data to Spatial Modelling](https://github.com/feurbano/data_management_2018/tree/master/sections/section_4)**
 * Section 5: **[RSA in Movement Population Ecology](https://github.com/feurbano/data_management_2018/tree/master/sections/section_5)**
