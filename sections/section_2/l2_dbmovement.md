@@ -1186,12 +1186,6 @@ INSERT INTO lu_tables.lu_gps_validity
   VALUES (21, 'Position wrong: duplicated timestamp');
 ```
 
-Now you can proceed with outlier detection. You can start by assuming that all the GPS positions are correct:
-
-```sql
-UPDATE main.gps_data_animals 
-  SET gps_validity_code = 1;
-```
 ### Detect and mark erroneous data
 
 In this topic, you can see an example of how each kind of error can be detected with SQL and marked in the *GPS_data_animals* table.
@@ -1205,6 +1199,15 @@ UPDATE main.gps_data_animals
   SET gps_validity_code = 0 
   WHERE geom IS NULL;
 ```
+
+Now you can go on assuming that all the GPS positions are correct:
+
+```sql
+UPDATE main.gps_data_animals 
+  SET gps_validity_code = 1
+  WHERE gps_validity_code IS NULL;
+```
+
 
 In some (rare) cases, you might have a repeated acquisition time (from the same acquisition source). You can detect these errors by grouping your data set by animal and acquisition time and asking for multiple occurrences. Here is an example of an SQL query to get this result:
 ```sql
@@ -1221,7 +1224,7 @@ WHERE
   a.animals_id = x.animals_id AND 
   a.acquisition_time = x.acquisition_time 
 ORDER BY 
-  x.animals_id, x.acquisition_time);
+  x.animals_id, x.acquisition_time;
 ```
 
 This query returns the id of the records with duplicated timestamps (having *count(animals_id) > 1*). In this case, you have no data affected by this error. In case there are records with this problem, the data manager has to decide what to do. You can keep one of the two (or more) GPS positions with repeated acquisition time, or tag both (all) as unreliable. The first possibility would imply a detailed inspection of the locations at fault, in order to possibly identify (with no guarantee of success) which one is correct. On the other hand, the second case is more conservative and can be automated as the user does not have to take any decision that could lead to erroneous conclusions. Removing data (or tagging them as erroneous) is often not so much a problem with GPS data sets, since you probably have thousands of locations anyway. On the other hand, keeping incorrect data could be much more of a problem and bias further analyses. However, suspicious locations, if correct, might be exactly the information needed for a specific analysis (e.g. rutting excursions). As for the other type of errors, a specific *gps_validity_code* is suggested. Here is an example (that will not affect your database as no timestamp is duplicated):
