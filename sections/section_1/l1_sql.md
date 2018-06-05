@@ -11,7 +11,7 @@
 * [1.9  HAVING](#c_1.9)
 * [1.10  Joining multiple tables](#c_1.10)
 * [1.11  LEFT JOIN](#c_1.11)
-* [1.12  Nested queries](#c_1.12)
+* [1.12   Subqueries used in FROM statement](#c_1.12)
 * [1.13  WINDOW functions](#c_1.13)
 * [1.14  INSERT, UPDATE, DELETE](#c_1.14)
 * [1.15  Temporal data (date, time, timezone), EXTRACT](#c_1.15)
@@ -35,6 +35,15 @@ The reference software platform used in this lesson is the open source PostgreSQ
 
 This lesson introduces students to SQL and spatial SQL and illustrates the main commands that are needed to interact with a database. Each command is described and an example shows how it works. At the end, an exercise is proposed to let students experiment by themselves.
 
+Please note that in this lesson just some of the main SQL commands are discussed. If you want to explore more of the magic SQL world you can use on of the mant tutorial available on the web. Among the others:
+
+* [PostgreSQL official tutorial](https://www.postgresql.org/docs/current/static/tutorial.html)
+* [postgresqltutorial](http://www.postgresqltutorial.com/)
+* [w3resource](https://w3resource.com/PostgreSQL/tutorial.php)
+* [sqlbolt](https://sqlbolt.com/)
+* [webcheatsheet](http://webcheatsheet.com/sql/interactive_sql_tutorial/)
+* [www.sql.org](www.sql.org)
+
 ## <a name="c_1.2"></a>1.2 Overview of the database used for the exercises
 The database used in the example is a copy of what will be developed during lesson 2. It includes GPS tracking data from 5 roe deer in Italian Alps, with some information on individuals and captures. As a general reference, the database data model is illustrated below:
 
@@ -44,7 +53,7 @@ The database used in the example is a copy of what will be developed during less
 The database is hosted on a server FEM. The ip address: **eurodee2.fmach.it**is , port: **5432**. The database is called **gps_tracking_db**. User id and password will be provided during the course. 
 
 ## <a name="c_1.3"></a>1.3 Schemas, tables, data types, primary key
-The basic structure of a database is called a **[TABLE](https://www.postgresql.org/docs/devel/static/sql-createtable.html)**. As you would expect it is composed of columns and rows, but unlike what happens in Excel or Calc, you cannot put whatever you want in it. A table is declaratively created with a structure: each column has a defined **[DATA TYPE](http://www.postgresql.org/docs/devel/static/datatype.html)**, and the rows (also called *records*) must respect this type: the system enforces this constraint, and does not allow the wrong kind of data to slip in.   
+The basic structure of a database is called a **[TABLE](https://www.postgresql.org/docs/devel/static/sql-createtable.html)**. As you would expect it is composed of columns and rows, but unlike what happens in Excel or Calc, you cannot put whatever you want in it. A table is declaratively created with a structure: each column has a defined **[DATA TYPE](http://www.postgresql.org/docs/devel/static/datatype.html)**, and the rows (also called *records*) must respect this type: the system enforces this constraint, and does not allow the wrong kind of data to slip in.  
 Some of the frequently used data types are: `integer` for whole numbers, `numeric` for possibly fractional numbers, `text` for character strings, `date` for dates, `time` for time-of-day values, and `timestamp` for values containing both date and time. Each data type has specific properties and functions associated. For instance, a column declared to be of a numerical type will not accept arbitrary text strings, and the data stored in such a column can be used for mathematical computations. By contrast, a column declared to be of a character string type will accept almost any kind of data but it does not lend itself to mathematical calculations, although other operations such as string concatenation are available.   
 The number and order of the columns is fixed, and each column has a name. The number of rows is variable — it reflects how much data is stored at a given moment.   
 SQL does not make any guarantees about the order of the rows in a table. When a table is read, the rows will appear in an unspecified order, unless sorting is explicitly requested.  
@@ -52,9 +61,9 @@ You will see how to create a table in lesson 2, when you will create your own da
 
 Tables can be linked to one another (the jargon term for this kind of link is *relation*, which accounts for the *R* in *RDBMS*): you can explicitly ask that the value to put in a specific record column comes from another table. This helps reduce data replication, and explicitly keeps track of inter-table structure in a formalized way.
 
-Each row of a table must be identified by the value of one. The same value (or set of values) cannot be repeated in two different rows. The attributes that identify a record are called **[primary key](https://www.postgresql.org/docs/devel/static/ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS)**. The primary key must be explicitly defined for all the tables (although this is not strictly required to create the table, it is necessary for a correct use of the database).
+Each row of a table must be identified by the value of one. The same value (or set of values) cannot be repeated in two different rows. The attributes that identify a record are called **[PRIMARY KEY](https://www.postgresql.org/docs/devel/static/ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS)**. The primary key must be explicitly defined for all the tables (although this is not strictly required to create the table, it is necessary for a correct use of the database).
 
-A database contains one or more **[schemas](http://www.postgresql.org/docs/devel/static/ddl-schemas.html)**, which in turn contain tables. Schemas also contain other kinds of objects, including data types, functions, and operators. The same object name can be used in different schemas without conflict. Schemas are analogous to directories at the operating system level, except that schemas cannot be nested.  
+A database contains one or more **[SCHEMAS](http://www.postgresql.org/docs/devel/static/ddl-schemas.html)**, which in turn contain tables. Schemas also contain other kinds of objects, including data types, functions, and operators. The same object name can be used in different schemas without conflict. Schemas are analogous to directories at the operating system level, except that schemas cannot be nested.  
 Schema are used:
 
 * to allow many users to use one database without interfering with each other
@@ -317,16 +326,141 @@ nome_com like 'C____e';
 * Retrieve all the animals that have the letter 'a' in their name
 
 ## <a name="c_1.8"></a>1.8 GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)
+The `GROUP BY` clause divides the rows returned from the `SELECT` statement into groups. For each group, you can apply an aggregate function to the values of the columns that are nto used as criteria to group the rows. The main aggregate functions (at least for numbers) are `COUNT`, `SUM`, `MIN`, `MAX`, `AVG`, `STDDEV`. For example SUM calculates the sum of items and COUNT gets the number of items in the groups.
 
+The GROUP BY clause must appear right after the FROM or WHERE clause. Followed by the GROUP BY clause is one column or a list of comma-separated columns. You can also put an expression in the GROUP BY clause.
+
+```sql
+SELECT column_x, aggregate_function(column_y)
+FROM table_x
+GROUP BY column_x;
+```
+
+The following statement illustrates the syntax of the GROUP BY clause.
+```sql
+SELECT 
+  sex, 
+  count(animals_id) as number_animals 
+FROM 
+  main.animals
+GROUP BY 
+  sex;
+```
+
+```sql
+SELECT 
+  gps_sensors_id, 
+  max(roads_dist)
+FROM 
+  main.gps_data_animals
+GROUP BY 
+  gps_sensors_id;
+```
 
 ##### Exercise
 
+* Count how many records you have per animal with coordinates not null (table *main.gps_data_animals*) and the average distance to roads.
 
 ## <a name="c_1.9"></a>1.9 HAVING
+We often use the `HAVING` clause in conjunction with the `GROUP BY` clause to filter group rows that do not satisfy a specified condition. The `HAVING` clause sets the condition for group rows created by the `GROUP BY` clause after the GROUP BY clause applies while the `WHERE` clause sets the condition for individual rows before `GROUP BY` clause applies. This is the main difference between the `HAVING` and `WHERE` clauses, as illustrated in the examples.
+
+```sql
+SELECT 
+  animals_id, 
+  count(animals_id), 
+  avg(roads_dist)
+FROM 
+  main.gps_data_animals
+WHERE 
+  roads_dist < 900
+GROUP BY 
+  animals_id
+ORDER BY 
+  animals_id;
+```
+
+```sql
+SELECT 
+  animals_id, 
+  count(animals_id),
+  avg(roads_dist)::integer
+FROM 
+  main.gps_data_animals
+GROUP BY 
+  animals_id
+HAVING
+  avg(roads_dist) < 900
+ORDER BY 
+  animals_id;
+```
+
+##### Exercise
+
+* Count how many records you have per station_id (table *main.gps_data_animals*) considering animals 1 and 2.
+* Visualize all the animals that have more than 2500 records (table *main.gps_data_animals*) 
 
 ## <a name="c_1.10"></a>1.10 Joining multiple tables
+Thus far, our queries have only accessed one table at a time. Queries can access multiple tables at once, involving information for all the tables involved. A query that accesses multiple rows of the same or different tables at one time is called a **join query**. There are different syntax that can be used. The simpler one is illustrated in the next exaple. If I want to visualize all the records in the table *main.gps_data_animals* that belongs to male animals, I have to include all the information in the table *main.animals* where the sex is stored and then I have select the pairs of rows where these animals_id (that is present in both tables and "link" them) match.
+
+```sql
+SELECT 
+  animals.animals_id, 
+  animals.sex, 
+  gps_data_animals.acquisition_time, 
+  gps_data_animals.longitude, 
+  gps_data_animals.latitude
+FROM 
+  main.gps_data_animals, 
+  main.animals
+WHERE 
+  animals.animals_id = gps_data_animals.animals_id;
+```
+
+When multiple tables are involved, it is a good practice to qualify the name of each column with the name of the table it belongs to. This is compulsory if the same name of column is used in two different tables.
+
+The join illustrated in the example can also be written in this alternative and equivalent form:
+```sql
+SELECT 
+  animals.animals_id, 
+  animals.sex, 
+  gps_data_animals.acquisition_time, 
+  gps_data_animals.longitude, 
+  gps_data_animals.latitude
+FROM 
+  main.gps_data_animals
+INNER JOIN 
+  main.animals
+ON (animals.animals_id = gps_data_animals.animals_id);
+```
+
+##### Exercise
+* Retrieve the name of each animal with the timestamp of its first and last location
+
 ## <a name="c_1.11"></a>1.11 LEFT JOIN
-## <a name="c_1.12"></a>1.12 Nested queries
+In the previous examplse, only the records from the first and from the second table that match the join conditions are included in the results. Using `JOIN` syntax is possible to include ALL record from the first table and only the records from the second table that match the join conditions. This is achieved with the use of `LEFT JOIN`. This kind of join is useful in many situations.
+
+```sql
+SELECT 
+  lu_age_class.age_class_code, 
+  lu_age_class.age_class_description, 
+  animals.name, 
+  animals.sex
+FROM 
+  lu_tables.lu_age_class
+LEFT JOIN
+  main.animals
+ON 
+  lu_age_class.age_class_code = animals.age_class_code;
+```
+
+In this case, also the age class code with no animals associated are reported.
+
+##### Exercise
+* Count how many animals are included in the table *main.animals* for each species listed in the table *lu_tables.lu_species* (report '0' instead of *NULL* if there are no animals for that species).
+
+## <a name="c_1.12"></a>1.12 Subqueries used in FROM statement
+
+
 ## <a name="c_1.13"></a>1.13 WINDOW functions
 
 A window function performs a calculation across a set of rows that are somehow related to the current row. This is similar to an aggregate function, but unlike regular aggregate functions, window functions do not group rows into a single output row, hence they are still able to access more than just the current row of the query result. In particular, it enables you to access previous and next rows (according to a user-defined ordering criteria) while calculating values for the current row. This is very useful, as a tracking data set has a predetermined temporal order, where many properties (e.g. geometric parameters of the trajectory, such as turning angle and speed) involve a sequence of GPS positions. It is important to remember that the order of records in a database is irrelevant. The ordering criteria must be set in the query that retrieves data.
