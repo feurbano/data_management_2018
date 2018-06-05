@@ -2,10 +2,10 @@
 
 * [1.1  Introduction to SQL](#c_1.1)
 * [1.2  Overview of the database used for the exercises](#c_1.2)
-* [1.3  Schemas, tables, data types](#c_1.3)
+* [1.3  Schemas, tables, data types, primary key](#c_1.3)
 * [1.4  SELECT, FROM, WHERE](#c_1.4)
 * [1.5  AND, OR, IN, !=, NULL](#c_1.5)
-* [1.6  ORDER BY, LIMIT, DISTINCT, CASE, CAST](#c_1.6)
+* [1.6  ORDER BY, LIMIT,  DISTINCT, CASE, CAST, COALESCE](#c_1.6)
 * [1.7  LIKE](#c_1.7)
 * [1.8  GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)](#c_1.8)
 * [1.9  HAVING](#c_1.9)
@@ -19,7 +19,7 @@
 * [1.17  Visualize the coordinates of a spatial object](#c_1.17)
 * [1.18  Reference systems and projections](#c_1.18)
 * [1.19  Create a point from coordinates](#c_1.19)
-* [1.2  Create a line from ordered points (trajectory)](#c_1.2)
+* [1.20  Create a line from ordered points (trajectory)](#c_1.2)
 * [1.21  Calculate length of a trajectory](#c_1.21)
 * [1.22  Create a polygon from points (convex hull)](#c_1.22)
 * [1.23  Calculate the area of a polygon](#c_1.23)
@@ -27,68 +27,41 @@
 
 
 ## <a name="c_1.1"></a>1.1 Introduction to SQL
-The state-of-the-art technical tool for effectively and efficiently managing movement and population ecology data is the spatial relational database management systems (*SRDBMS* for short). Using databases to manage data implies a considerable effort for those who are not already familiar with these tools, but this is necessary to be able to deal with the large and/or complex data sets in a multi-user context where errors in data might be critical and data can be re-used many times for different projects, including in the long term. Moreover, the time spent to learn databases will be largely paid back with the time saved for the management and processing of the data. 
+The state-of-the-art technical tool for managing movement and population ecology data is the Spatial Relational DataBase Management Systems (*SRDBMS* for short). Using databases to manage data implies a considerable effort for those who are not already familiar with these tools, but this is necessary to be able to deal with large and/or complex data sets in a multi-user context where errors might be critical and data should be re-used for different projects. The time spent to learn databases will be largely paid back with the time saved for the management and processing of the data as compared with simpler data management approaches (e.g. spreadsheet). Other advanced data management systems exist (e.g. NoSQL database), but at the moment in most of the cases they are not the database technology of choice in ecology.
 
-*SQL*, which stands for *Structured Query Language* is a way for interacting with SRDBMS. SQL statements are used to perform tasks such as update data on a database, create database object or retrieve data from a database. In this lesson we will focus on data retrieval from an existing database. SQL is highly standardized and while each database platform has some kind of SQL dialect, once learnt SQL can be used with any SRDBMS tool (e.g. PostgreSQL [used during this course], MySQL, ORACLE, SQLServer, SQLite, SpatiaLite). While complex queries can be hard to design, SQL itself is a simple language that combines a very limited sets of commands in a way that is similar to the natural language.
+*SQL*, which stands for *Structured Query Language* is a way for interacting with SRDBMS. SQL statements are used to perform tasks such as update data on a database, create database objects or retrieve data from a database. In this lesson we will focus on data retrieval from an existing database. SQL is highly standardized and while each database platform has some kind of SQL dialect, it can be used with any SRDBMS tool (e.g. PostgreSQL [used during this course], MySQL, ORACLE, SQLServer, SQLite, SpatiaLite) with minimal changes. While complex queries can be hard to design, SQL itself is a simple language that combines a very limited sets of commands in a way that is similar to the natural language.
 
-The reference software platform used is the open source PostgreSQL with its spatial extension PostGIS. The reference (graphical) interface used to deal with the database
-is [pgAdmin3](http://www.pgadmin.org/). All the examples provided (SQL code) and technical solutions proposed are tuned on this software, although most of the code can be easily adapted for other platforms.
+The reference software platform used in this lesson is the open source PostgreSQL RDBMS with its spatial extension PostGIS. The reference (graphical) interface used to deal with the database is **[pgAdmin3](http://www.pgadmin.org/)**. All the examples provided (SQL code) and technical solutions proposed are tuned on this software, although most of the code can be easily adapted for other platforms.
 
-This lesson introduces students to SQL and spatial SQL and illustrates the main commands that are needed to interact with a database. Each command is described then an example shows how it works. At the end, an exercise is used to let students experiment by themselves.
+This lesson introduces students to SQL and spatial SQL and illustrates the main commands that are needed to interact with a database. Each command is described and an example shows how it works. At the end, an exercise is proposed to let students experiment by themselves.
 
 ## <a name="c_1.2"></a>1.2 Overview of the database used for the exercises
-[...]
-data content
-connection parameters
+The database used in the example is a copy of what will be developed during lesson 2. It includes GPS tracking data from 5 roe deer in Italian Alps, with some information on individuals and captures. As a general reference, the database data model is illustrated below:
 
-## <a name="c_1.3"></a>1.3 Schemas, tables, data types
-The basic structure of a database is called a *table*. As you would expect it is composed of columns and rows, but unlike what happens in Excel or Calc, you cannot put whatever you want in it. A table is declaratively created with a structure: each column has a defined *type* of data, and the rows (also called *records*) must respect this type: the system enforces this constraint, and does not allow the wrong kind of data to slip in. Each data type has specific properties and functions associated. You will see how to create a table in sections 2 and 3, when you will create your own database.
+<p align="center">
+<img src="https://github.com/feurbano/data_management_2018/blob/master/sections/section_1/images/gps_tracking_db_schema.png" Height="500"/>
+
+The database is hosted on a server FEM. The ip address: **eurodee2.fmach.it**is , port: **5432**. The database is called **gps_tracking_db**. User id and password will be provided during the course. 
+
+## <a name="c_1.3"></a>1.3 Schemas, tables, data types, primary key
+The basic structure of a database is called a **[TABLE](https://www.postgresql.org/docs/devel/static/sql-createtable.html)**. As you would expect it is composed of columns and rows, but unlike what happens in Excel or Calc, you cannot put whatever you want in it. A table is declaratively created with a structure: each column has a defined **[DATA TYPE](http://www.postgresql.org/docs/devel/static/datatype.html)**, and the rows (also called *records*) must respect this type: the system enforces this constraint, and does not allow the wrong kind of data to slip in.   
+Some of the frequently used data types are: `integer` for whole numbers, `numeric` for possibly fractional numbers, `text` for character strings, `date` for dates, `time` for time-of-day values, and `timestamp` for values containing both date and time. Each data type has specific properties and functions associated. For instance, a column declared to be of a numerical type will not accept arbitrary text strings, and the data stored in such a column can be used for mathematical computations. By contrast, a column declared to be of a character string type will accept almost any kind of data but it does not lend itself to mathematical calculations, although other operations such as string concatenation are available.   
+The number and order of the columns is fixed, and each column has a name. The number of rows is variable — it reflects how much data is stored at a given moment.   
+SQL does not make any guarantees about the order of the rows in a table. When a table is read, the rows will appear in an unspecified order, unless sorting is explicitly requested.  
+You will see how to create a table in lesson 2, when you will create your own database.
 
 Tables can be linked to one another (the jargon term for this kind of link is *relation*, which accounts for the *R* in *RDBMS*): you can explicitly ask that the value to put in a specific record column comes from another table. This helps reduce data replication, and explicitly keeps track of inter-table structure in a formalized way.
 
-[SCHEMA](http://www.postgresql.org/docs/devel/static/sql-createschema.html)
-[TABLE](https://www.postgresql.org/docs/devel/static/sql-createtable.html)
-[DATA TYPES](http://www.postgresql.org/docs/devel/static/datatype.html)
+Each row of a table must be identified by the value of one. The same value (or set of values) cannot be repeated in two different rows. The attributes that identify a record are called **[primary key](https://www.postgresql.org/docs/devel/static/ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS)**. The primary key must be explicitly defined for all the tables (although this is not strictly required to create the table, it is necessary for a correct use of the database).
 
-[...]
+A database contains one or more **[schemas](http://www.postgresql.org/docs/devel/static/ddl-schemas.html)**, which in turn contain tables. Schemas also contain other kinds of objects, including data types, functions, and operators. The same object name can be used in different schemas without conflict. Schemas are analogous to directories at the operating system level, except that schemas cannot be nested.  
+Schema are used:
 
-> Inside our new empty database, we would like to create tables -
-> possibly grouped together into logical units called
-> [schemas](http://www.postgresql.org/docs/9.4/interactive/ddl-schemas.html).
-> A table in a relational database is much like a table on paper: It
-> consists of rows and columns. The number and order of the columns is
-> fixed, and each column has a name. The number of rows is variable — it
-> reflects how much data is stored at a given moment. SQL does not make
-> any guarantees about the order of the rows in a table. When a table is
-> read, the rows will appear in an unspecified order, unless sorting is
-> explicitly requested. Furthermore, SQL does not assign unique
-> identifiers to rows, so it is possible to have several completely
-> identical rows in a table. This is a consequence of the mathematical
-> model that underlies SQL but is usually not desirable. We will see how
-> to deal with this issue in a while.
-> 
-> Each column has a data type. The data type constrains the set of
-> possible values that can be assigned to a column and assigns semantics
-> to the data stored in the column so that it can be used for
-> computations. For instance, a column declared to be of a numerical
-> type will not accept arbitrary text strings, and the data stored in
-> such a column can be used for mathematical computations. By contrast,
-> a column declared to be of a character string type will accept almost
-> any kind of data but it does not lend itself to mathematical
-> calculations, although other operations such as string concatenation
-> are available.
-> 
-> PostgreSQL includes a sizable set of built-in data types that fit many
-> applications. Users can also define their own data types. Most
-> built-in data types have obvious names and semantics, and are
-> explained in great detail in PostgreSQL
-> [datatype documentation](http://www.postgresql.org/docs/9.4/interactive/datatype.html).
-> Some of the frequently used data types are: `integer` for whole
-> numbers, `numeric` for possibly fractional numbers, `text` for
-> character strings, `date` for dates, `time` for time-of-day values,
-> and `timestamp` for values containing both date and time.
+* to allow many users to use one database without interfering with each other
+* to organize database objects into logical groups to make them more manageable
+* third-party applications can be put into separate schemas so they do not collide with the names of other objects
 
-*some tricks on the use of pgadmin?*
+You can run SQL commands, explore database object and see table content using the graphical interface **[PgAdmin](https://www.pgadmin.org/)** version 3 or version 4. Even if version 4 is more advanced, it lacks some useful features that are present in version 3.
 
 ## <a name="c_1.4"></a>1.4 SELECT, FROM, WHERE
 The operation of choosing the records you want is called *selection*: the `SELECT` command allows you to express clearly which columns you need, which rows, and in which
@@ -120,45 +93,237 @@ SELECT 'Hi there';
 SELECT now();
 ```
 
-`FROM` command specifies the tables where is stored the required information.
+`FROM` command specifies the tables where is stored the required information. If a table is specified, after `SELECT` you must list the columns of the table that you want to retrieve. If you use `*`, all the columns are returned.
 
-[example with set of columns, example with all columns]
 ```sql
-xxxx
+SELECT 
+  animals_id, 
+  animals_code, 
+  name
+FROM 
+  main.animals;
 ```
 
 ```sql
-xxxx
+SELECT 
+  *
+FROM 
+  main.animals;
 ```
 
 `WHERE` is used to set criteria on the data that you want to retrieve.
 
 [example with 1 criteria on number and 1 criteria on string]
 ```sql
-xxxx
+SELECT 
+  *
+FROM 
+  main.animals
+WHERE
+  sex = 'f';
 ```
 
 ```sql
-xxxx
+SELECT 
+  *
+FROM 
+  main.animals
+WHERE
+  animals_id = 1;
+```
+You can use `AS` to specify an alias for columns (and also tables).
+
+```sql
+SELECT 
+  animals_id AS id, 
+  animals_code AS CODE
+FROM 
+  main.animals;
 ```
 
 The complete reference of the `SELECT` statement and related commands is available
 [here](https://www.postgresql.org/docs/devel/static/sql-select.html).
 
-## <a name="c_1.5"></a>1.5 AND, OR, IN, !=, NULL
-## <a name="c_1.6"></a>ORDER BY, LIMIT, DISTINCT, CASE, CAST
-Sometimes we are only interested in which values do appear, and not on
-specific records. In this casee would use `DISTINCT` to squash duplicate values, like so:
+## <a name="c_1.5"></a>1.5 AND, OR, NOT, IN, <, >, =, !=, NULL
+In `WHERE` statements you can include the classic logical operations to combine the different conditions (`AND`, `OR`, `NOT`).  
+Conditions can be expressed using the standard symbols (`>`, `<`, `=`, `!=`). If the equivalence is set to a number of values, you can use `IN` followed by the list of values in parenthesis.  
+When no information is available in a column (which is different from FALSE or 0!), you have to use the key term `NULL` and the conditions `IS NULL`, `IS NOT NULL`.  
+Here below you can find some examples.
 
 ```sql
-SELECT DISTINCT ccc FROM www;
+SELECT 
+  gps_data_animals_id, 
+  animals_id, 
+  acquisition_time, 
+  longitude, 
+  latitude,  
+  roads_dist
+FROM 
+  main.gps_data_animals 
+WHERE
+  animals_id = 1 AND 
+  roads_dist = 100;
 ```
 
-Create a view that returns, for each animal, the number of non null locations, the number of null locations, and the start and end date of the deployment.
+```sql
+SELECT 
+  *
+FROM 
+  main.animals
+WHERE
+  animals_id <= 2 OR
+  sex = 'f';
+```
+
+```sql
+SELECT 
+  gps_data_animals_id, 
+  animals_id, 
+  acquisition_time, 
+  longitude, 
+  latitude,  
+  roads_dist
+FROM 
+  main.gps_data_animals 
+WHERE
+  animals_id in (1, 4) AND 
+  longitude IS NULL AND 
+  acquisition_time <= '2005-11-19 12:00:00+00';
+```
+
+## <a name="c_1.6"></a>ORDER BY, LIMIT,  DISTINCT, CASE, CAST, COALESCE
+You can control how records are visualized. Particularly, you can define the criteria to order them using `ORDER BY (column a) ASC/DESC, (column b) ASC/DESC ...` (ASC is used by default).  
+With `LIMIT` you can retrieve just a defined number of records, which is convinient when tables have many record.  
+For example you can combine ORDER BY and LIMIT to get the first 10 locations of a given animal. 
+
+```sql
+SELECT 
+  gps_data_animals_id, 
+  animals_id, 
+  acquisition_time, 
+  longitude, 
+  latitude
+FROM 
+  main.gps_data_animals 
+WHERE
+  animals_id = 1 
+ORDER BY acquisition_time 
+LIMIT 10;
+```
+
+Sometimes we are only interested in which values do appear, and not on
+specific records. In this case you can `DISTINCT` to squash duplicate values.
+
+```sql
+SELECT DISTINCT 
+  animals_id 
+FROM 
+  main.animals;
+```
+The SQL `CASE` expression is a generic conditional expression, similar to if/else statements in other programming languages. The syntax is `CASE WHEN criteria THEN value END`. Here an example
+
+```sql
+SELECT 
+  gps_data_animals_id, 
+  animals_id, 
+  acquisition_time, 
+  longitude, 
+  latitude,
+  roads_dist,
+  CASE WHEN roads_dist < 1000 THEN 'close' ELSE 'far' END AS distance
+FROM 
+  main.gps_data_animals 
+WHERE
+  animals_id = 1 AND
+  roads_dist IS NOT NULL
+LIMIT 100;
+```
+There are many cases that you want to convert one data type into another. PostgreSQL provides the syntax for converting one type into another. The easiest way is to use `::` followed by the new data type. Note that not all the conversions are allowed. A text cannot be cast as number, but numbers can be transformed into text, or a decimal number into an integer.
+
+
+```sql
+SELECT 
+  7 AS example1a,
+  7::text AS example1b,
+  7.8::integer AS example2,
+  now() AS example3a,
+  now()::text AS example3b,
+  10/3 AS example4a,
+  10/3.0 AS example4b;
+```
+The `COALESCE` function returns the first of its arguments that is not null. Null is returned only if all arguments are null. It is often used to substitute a default value for null values when data is retrieved for display.
+
+```sql
+SELECT 
+  gps_data_animals_id, 
+  animals_id, 
+  acquisition_time, 
+  coalesce(longitude, 0) AS longitude_with_0, 
+  coalesce(latitude, 0) AS latitude_with_0,
+FROM 
+  main.gps_data_animals 
+LIMIT 100;
+```
+
+##### Exercise
+* Visualize the first 10 records in the *main.gps_data_animals* table that belong to animal_id 1 and where the distance to road is > 3000 meters
+* Visualize the records in the *main.animals* table with a fields with "male" or "female" according to their sex
+* Visualize all the existing values for the column *pro_com* in the *main.gps_data_animals* table
 
 ## <a name="c_1.7"></a>1.7 LIKE
+PostreSQL provides many tools to deal with string object. The most notable is **[LIKE](https://www.postgresql.org/docs/devel/static/functions-matching.html)**. The LIKE expression returns true if the string matches the supplied pattern. If pattern does not contain percent signs or underscores, then the pattern only represents the string itself; in that case LIKE acts like the equals operator. An underscore ( `_` ) in pattern stands for (matches) any single character; a percent sign ( `%` ) matches any sequence of zero or more characters.
+
+Some examples are reported below.
+
+```sql
+SELECT 
+  pro_com, 
+  nome_com
+FROM 
+  env_data.adm_boundaries;
+```
+
+```sql
+SELECT 
+  pro_com, 
+  nome_com
+FROM 
+  env_data.adm_boundaries
+WHERE
+nome_com like 'C%';
+```
+
+```sql
+SELECT 
+  pro_com, 
+  nome_com
+FROM 
+  env_data.adm_boundaries
+WHERE
+nome_com like 'C%e';
+```
+
+```sql
+SELECT 
+  pro_com, 
+  nome_com
+FROM 
+  env_data.adm_boundaries
+WHERE
+nome_com like 'C____e';
+```
+
+##### Exercise
+* Retrieve all the animals that have the letter 'a' in their name
+
 ## <a name="c_1.8"></a>1.8 GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)
+
+
+##### Exercise
+
+
 ## <a name="c_1.9"></a>1.9 HAVING
+
 ## <a name="c_1.10"></a>1.10 Joining multiple tables
 ## <a name="c_1.11"></a>1.11 LEFT JOIN
 ## <a name="c_1.12"></a>1.12 Nested queries
