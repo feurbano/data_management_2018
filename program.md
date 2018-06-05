@@ -33,7 +33,7 @@
 * 1.23 Calculate the area of a polygon
 * 1.24 Visualize spatial data in QGIS
 
-## 2. Movement Ecology Data Management (Urbano, 10 h)
+## 2. Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano, 10 h)
 * 2.1 Introduction to the goals and the datasets
 * 2.2 Create a db and import sensor data
 * 2.3 Create acquisition timestamps, indexes and permissions

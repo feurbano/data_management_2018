@@ -1414,7 +1414,7 @@ If you have tables that change frequently and others that remain unchanged for l
 
 1.  Calculate number of locations per animal per month
 2.  Calculate average distance per animal per month
-3.  Find animals at same place at the same time
+3.  Find animals at same place (distance between locations < 100 m) at the same time (temporal difference between locations < 5 h)
 4.  Find how many locations falls in the home range (convex hulls) of another animal
 5.  Find the GPS position stored in the database that is closest to the city of Trento
 6.  Is the average distance covered between 8 p.m. and 8 a.m smaller or bigger than the average distance covered between 8 a.m. and 8 p.m?

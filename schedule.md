@@ -5,8 +5,8 @@
 08.30-12.30: Arrivals<br>
 12.30-13.30: Lunch<br>
 13.30-14.30: Introduction to Spatial Objects in Animal Ecology (Cagnacci)<br>
-14.30-15.30: Introduction to Data Management and Spatial Database (Urbano)<br>
-15.30-16.00: Installation of PostgreSQL/PostGIS and Connection to the DB (Urbano)<br>
+14.30-15.15: Introduction to Data Management and Spatial Database (Urbano)<br>
+15.15-16.00: Installation of PostgreSQL/PostGIS and Connection to the DB (Urbano)<br>
 16.00-18.00: SQL and Spatial SQL (Urbano)<br>
 18.00-18.30: Science Happy Hour: Flash talks from students, in presence of experts<br>
 </td> 
@@ -16,16 +16,16 @@
 08.30-12.30: SQL and Spatial SQL (Urbano)<br>
 12.30-13.30: Lunch<br>
 13.30-14.00: The Ecological Context Built from Satellites (Rocchini)<br>
-14.00-18.00: Movement Ecology Data Management (Urbano)<br>
+14.00-18.00: Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano)<br>
 18.00-18.30: Science Happy Hour: Flash talks from students, in presence of experts<br>
 </td> 
 </tr> 
 <tr><td>Wednesday, 20th June</td> 
 <td>
-08.30-12.30: Movement Ecology Data Management (Urbano)<br>
+08.30-12.30: Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano)<br>
 12.30-13.30: Lunch<br>
 13.30-14.00: Dealing with Acceleration Data (Berger)<br>
-14.00-16.00: Movement Ecology Data Management (Urbano)<br>
+14.00-16.00: Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano)<br>
 16.00-18.00: Movement Ecology Data Analysis with R (Basille)<br>
 18.00-18.30: Science Happy Hour: Flash talks from students, in presence of experts<br>
 </td> 
