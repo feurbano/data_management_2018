@@ -50,7 +50,7 @@ The database used in the example is a copy of what will be developed during less
 <p align="center">
 <img src="https://github.com/feurbano/data_management_2018/blob/master/sections/section_1/images/gps_tracking_db_schema.png" Height="500"/>
 
-The database is hosted on a server FEM. The ip address: **eurodee2.fmach.it**is , port: **5432**. The database is called **gps_tracking_db**. User id and password will be provided during the course. 
+The database is hosted on a server FEM. The IP address is: **eurodee2.fmach.it**, port: **5432**. The database is: **gps_tracking_db**. User name and password will be provided during the course. 
 
 ## <a name="c_1.3"></a>1.3 Schemas, tables, data types, primary key
 The basic structure of a database is called a **[TABLE](https://www.postgresql.org/docs/devel/static/sql-createtable.html)**. As you would expect it is composed of columns and rows, but unlike what happens in Excel or Calc, you cannot put whatever you want in it. A table is declaratively created with a structure: each column has a defined **[DATA TYPE](http://www.postgresql.org/docs/devel/static/datatype.html)**, and the rows (also called *records*) must respect this type: the system enforces this constraint, and does not allow the wrong kind of data to slip in.  
@@ -459,6 +459,26 @@ In this case, also the age class code with no animals associated are reported.
 * Count how many animals are included in the table *main.animals* for each species listed in the table *lu_tables.lu_species* (report '0' instead of *NULL* if there are no animals for that species).
 
 ## <a name="c_1.12"></a>1.12 Subqueries used in FROM statement
+In the `FROM` you can you not only tables, but also the result of another `SELECT`, as far as it is in parenthesis and that an alias is provided. The result of the sub-query will be traten by PostgreSQL as a table. Here an example.
+
+```sql
+SELECT 
+  count(dist_animal.animals_id)::integer AS num_individuals,
+
+  avg(dist_animal.avg_dist_animal)::integer AS avg_distance_individual,
+  stddev(dist_animal.avg_dist_animal)::integer AS stddev_distance_individual,
+  min(dist_animal.avg_dist_animal)::integer AS min_distance_individual, 
+  max(dist_animal.avg_dist_animal)::integer AS max_distance_individual 
+   
+FROM
+	(SELECT animals_id, avg(roads_dist) avg_dist_animal
+	FROM main.gps_data_animals
+	GROUP BY animals_id) AS dist_animal 
+;
+```
+
+##### EXERCISE
+* Write a query tha returns the id of the animal with more locations at a distance to road smaller than 500 meters
 
 
 ## <a name="c_1.13"></a>1.13 WINDOW functions
