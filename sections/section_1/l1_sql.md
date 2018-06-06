@@ -11,7 +11,7 @@
 * [1.9  HAVING](#c_1.9)
 * [1.10  Joining multiple tables](#c_1.10)
 * [1.11  LEFT JOIN](#c_1.11)
-* [1.12   Subqueries used in FROM statement](#c_1.12)
+* [1.12  Subqueries used in FROM statement](#c_1.12)
 * [1.13  WINDOW functions](#c_1.13)
 * [1.14  INSERT, UPDATE, DELETE](#c_1.14)
 * [1.15  Temporal data (date, time, timezone), EXTRACT](#c_1.15)
@@ -483,7 +483,46 @@ FROM
 
 ## <a name="c_1.13"></a>1.13 WINDOW functions
 
-A window function performs a calculation across a set of rows that are somehow related to the current row. This is similar to an aggregate function, but unlike regular aggregate functions, window functions do not group rows into a single output row, hence they are still able to access more than just the current row of the query result. In particular, it enables you to access previous and next rows (according to a user-defined ordering criteria) while calculating values for the current row. This is very useful, as a tracking data set has a predetermined temporal order, where many properties (e.g. geometric parameters of the trajectory, such as turning angle and speed) involve a sequence of GPS positions. It is important to remember that the order of records in a database is irrelevant. The ordering criteria must be set in the query that retrieves data.
+A window function performs a calculation across a set of rows that are somehow related to the current row. This is similar to an aggregate function, but unlike regular aggregate functions, window functions do not group rows into a single output row, hence they are still able to access more than just the current row of the query result. In particular, it enables you to access previous and next rows (according to a user-defined ordering criteria) while calculating values for the current row. This is very useful, as a tracking data set has a predetermined temporal order, where many properties (e.g. geometric parameters of the trajectory, such as turning angle and speed) involve a sequence of GPS positions. It is important to remember that the order of records in a database is irrelevant. The ordering criteria must be set in the query that retrieves data.  
+Once the window function is defined (e.g. `AVG`, `ROW_NUMBER()`,`LAG` *[value evaluated at the row that is offset rows before the current row within the partition]*), the user as to define the partition (grouping) criteria and the ordering with this syntax `OVER (PARTITION BY ... ORDER BY ...)`.
+
+In this example, you calculate the difference between the distance to roads of each location and the average distance to roads for all the location of the same animal.
+
+```sql
+SELECT 
+  animals_id, 
+  acquisition_time, 
+  roads_dist,
+  AVG(roads_dist) OVER (PARTITION BY animals_id) avg_road_distance,
+  (roads_dist - AVG(roads_dist) OVER (PARTITION BY animals_id))::integer diff_avg_road_distance
+FROM 
+  main.gps_data_animals
+WHERE 
+  roads_dist is not null
+LIMIT 100;
+```
+
+In this example you visualize the acquisition time of all records of animal 1 together with the acquisition time of the previous record (and their difference). In this case you have to specify the order of records inside each partition.
+
+```sql
+SELECT 
+  animals_id, 
+  acquisition_time,
+  lag(acquisition_time, 1) OVER (PARTITION BY animals_id order by acquisition_time) AS acquisition_time_previous,
+  acquisition_time - lag(acquisition_time, 1) OVER (PARTITION BY animals_id order by acquisition_time) AS diff_time
+FROM 
+  main.gps_data_animals
+WHERE 
+  roads_dist is not null
+ORDER BY animals_id, acquisition_time  
+LIMIT 100;
+```
+
+##### EXERCISE
+* Calculate the time difference between all the locations and the first location of each animal
+* Calculate the distance between a location and the previous location
+* Calculate the total number of valid locations (gps_validity_code = 1) for each animal and the percentage  over the total number of records
+
 
 ## <a name="c_1.14"></a>1.14 INSERT, UPDATE, DELETE
 > Data modification in SQL is accomplished with three statements:
