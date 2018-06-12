@@ -1,4 +1,28 @@
-# Dealing with Spatio-temporal Data in Movement and Population Ecology: SCHEDULE
+<br>
+<br>
+<br>
+<br>
+<br>
+<br><br>
+<br>
+<br>
+<br>
+<br>
+<br><br>
+<br>
+<br>
+<br>
+<br>
+<br><br>
+<br>
+<br>
+<br>
+<br>
+<br><br>
+<br>
+<br>
+<br><br>
+<br>
 <table> 
 <tr><td>Monday, 18th June</td> 
 <td>

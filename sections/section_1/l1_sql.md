@@ -464,7 +464,6 @@ In the `FROM` you can you not only tables, but also the result of another `SELEC
 ```sql
 SELECT 
   count(dist_animal.animals_id)::integer AS num_individuals,
-
   avg(dist_animal.avg_dist_animal)::integer AS avg_distance_individual,
   stddev(dist_animal.avg_dist_animal)::integer AS stddev_distance_individual,
   min(dist_animal.avg_dist_animal)::integer AS min_distance_individual, 
