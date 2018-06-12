@@ -1,28 +1,5 @@
-<br>
-<br>
-<br>
-<br>
-<br>
-<br><br>
-<br>
-<br>
-<br>
-<br>
-<br><br>
-<br>
-<br>
-<br>
-<br>
-<br><br>
-<br>
-<br>
-<br>
-<br>
-<br><br>
-<br>
-<br>
-<br><br>
-<br>
+# Dealing with Spatio-temporal Data in Movement and Population Ecology: SCHEDULE
+
 <table> 
 <tr><td>Monday, 18th June</td> 
 <td>
