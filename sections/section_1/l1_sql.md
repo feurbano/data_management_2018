@@ -35,7 +35,7 @@ The reference software platform used in this lesson is the open source PostgreSQ
 
 This lesson introduces students to SQL and spatial SQL and illustrates the main commands that are needed to interact with a database. Each command is described and an example shows how it works. At the end, an exercise is proposed to let students experiment by themselves.
 
-Please note that in this lesson just some of the main SQL commands are discussed. If you want to explore more of the magic SQL world you can use on of the mant tutorial available on the web. Among the others:
+Please note that in this lesson just some of the main SQL commands are discussed. If you want to explore more of the magic SQL world you can use one of the many tutorials available on the web. Among the others:
 
 * [PostgreSQL official tutorial](https://www.postgresql.org/docs/current/static/tutorial.html)
 * [postgresqltutorial](http://www.postgresqltutorial.com/)
@@ -202,7 +202,7 @@ WHERE
 
 ## <a name="c_1.6"></a>ORDER BY, LIMIT,  DISTINCT, CASE, CAST, COALESCE
 You can control how records are visualized. Particularly, you can define the criteria to order them using `ORDER BY (column a) ASC/DESC, (column b) ASC/DESC ...` (ASC is used by default).  
-With `LIMIT` you can retrieve just a defined number of records, which is convinient when tables have many record.  
+With `LIMIT` you can retrieve just a defined number of records, which is convenient when tables have many record.  
 For example you can combine ORDER BY and LIMIT to get the first 10 locations of a given animal. 
 
 ```sql
@@ -268,7 +268,7 @@ SELECT
   animals_id, 
   acquisition_time, 
   coalesce(longitude, 0) AS longitude_with_0, 
-  coalesce(latitude, 0) AS latitude_with_0,
+  coalesce(latitude, 0) AS latitude_with_0
 FROM 
   main.gps_data_animals 
 LIMIT 100;
