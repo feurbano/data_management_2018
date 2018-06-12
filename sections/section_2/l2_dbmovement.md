@@ -1244,7 +1244,7 @@ UPDATE main.gps_data_animals
         HAVING count(animals_id) > 1) a 
       WHERE 
         a.animals_id = x.animals_id AND 
-        a.acquisition_time = x.acquisition_time;
+        a.acquisition_time = x.acquisition_time);
 ```
 
 It may happen that data are obtained from sensors through different data transfer processes. A typical example is data received in near real time through a GSM network and later downloaded directly via cable from the sensor when it is physically removed from the animal. If the information is different, it probably means that an error occurred during data transmission. In this case, it is necessary to define a hierarchy of reliability for the different sources (e.g. data obtained via cable download are better than those obtained via the GSM network). This information should be stored when data are imported into the database into *gps_data* table. Then, when valid data are to be identified, the 'best' code should be selected, paying attention to properly synchronize *gps_data* and *gps_data_animals*. Which specific tools will be used to manage different acquisition sources largely depends on the number of sensors, frequency of updates, and desired level of automation of the process. No specific examples are provided here.
