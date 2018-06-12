@@ -7,7 +7,7 @@
 * 0.4 Connection to the database tracking_db
 * 0.5 Exploration of pgAdmin Interface
  
-## 1. SQL and Spatial SQL (Urbano, 6 h) 
+## 1. SQL and Spatial SQL (Urbano & Johannes De Groeve, 6 h) 
 * 1.1 Introduction to SQL
 * 1.2 Overview of the database used for the exercises
 * 1.3 Schemas, tables, data types
@@ -33,7 +33,7 @@
 * 1.23 Calculate the area of a polygon
 * 1.24 Visualize spatial data in QGIS
 
-## 2. Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano, 10 h)
+## 2. Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano & Johannes De Groeve, 10 h)
 * 2.1 Introduction to the goals and the datasets
 * 2.2 Create a db and import sensor data
 * 2.3 Create acquisition timestamps, indexes and permissions
@@ -56,6 +56,6 @@
 ## 5. Resource Selection Analysis in Movement Ecology (Van Loon, 4 h)
 
 ## 6. Special Topics
-* 6.1 The Ecological Context Built from Satellites, including Sentinel (Rocchini, 30 minutes)
+* 6.1 The Ecological Context Built from Satellites, including Sentinel (Delucchi, 30 minutes)
 * 6.2 Dealing with Acceleration Data (Berger, 30 minutes)
 * 6.3 Data sharing and Data Standards for a Better Science (Davidson, 30 minutes)
