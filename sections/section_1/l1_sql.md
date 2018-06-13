@@ -359,7 +359,7 @@ GROUP BY
 
 ##### Exercise
 
-* Count how many records you have per animal with coordinates not null (table *main.gps_data_animals*) and the average distance to roads.
+* Count how many records you have per animal with coordinates not null (table *main.gps_data_animals*) and the average altitude.
 
 ## <a name="c_1.9"></a>1.9 HAVING
 We often use the `HAVING` clause in conjunction with the `GROUP BY` clause to filter group rows that do not satisfy a specified condition. The `HAVING` clause sets the condition for group rows created by the `GROUP BY` clause after the GROUP BY clause applies while the `WHERE` clause sets the condition for individual rows before `GROUP BY` clause applies. This is the main difference between the `HAVING` and `WHERE` clauses, as illustrated in the examples.
@@ -477,7 +477,7 @@ FROM
 ```
 
 ##### EXERCISE
-* Write a query tha returns the id of the animal with more locations at a distance to road smaller than 500 meters
+* Retrive the animal with the larger altitudina range
 
 
 ## <a name="c_1.13"></a>1.13 WINDOW functions
@@ -524,60 +524,116 @@ LIMIT 100;
 
 
 ## <a name="c_1.14"></a>1.14 INSERT, UPDATE, DELETE
-> Data modification in SQL is accomplished with three statements:
-> `INSERT`, `UPDATE`, `DELETE`. Syntax is pretty simple, let's see a few
-> examples:
-> 
-> ```sql
-> INSERT INTO main.animals (animals_id,animals_code,name,sex) VALUES (7,'NEW01','new','f');
-> ```
-> 
-> Check what's happened:
-> 
-> ```sql
-> SELECT * FROM main.animals WHERE animals_id=7;
-> ```
-> 
-> We forgot to define `age_class_code` and `species_code`, so let's add
-> them to our new record:
-> 
-> ```sql
-> UPDATE main.animals
-> SET age_class_code = 1, species_code = 3
-> WHERE animals_id = 7;
-> ```
-> 
-> Pay attention to `UPDATE` statements: if you forget the `WHERE` part,
-> they apply to the whole table - in the present case clearly not what
-> we want.
-> 
-> ```sql
-> SELECT * FROM main.animals WHERE animals_id=7;
-> ```
-> 
-> To get rid of the test record we just added:
-> 
-> ```sql
-> DELETE FROM main.animals WHERE animals_id=7;
-> ```
-> 
-> Here too you need to remember the `WHERE` clause: otherwise all of
-> your records will be deleted!
+
+With SQL you can do more that query data. Particularly, you can modify data using mainly these three statements: `INSERT`, `UPDATE`, `DELETE`.  
+Syntax is pretty simple, let's see a few examples. Here we insert a new animal in *main.animals* table:
+
+```sql
+INSERT INTO main.animals (animals_id,animals_code,name,sex) VALUES (99,'NEW01','new','f');
+```
+
+Check what's happened:
+
+```sql
+SELECT * FROM main.animals WHERE animals_id=99;
+```
+
+We forgot to define *age_class_code* and *species_code*, so let's add them to our new record:
+
+```sql
+UPDATE main.animals
+SET age_class_code = 1, species_code = 3
+WHERE animals_id = 99;
+```
+
+Pay attention to `UPDATE` statements: if you forget the `WHERE` part, they apply to the whole table - in the present case clearly not what we want.
+
+```sql
+SELECT * FROM main.animals WHERE animals_id=99;
+```
+
+To get rid of the test record we just added:
+
+```sql
+DELETE FROM main.animals WHERE animals_id=99;
+```
+
+Here too you need to remember the `WHERE` clause: otherwise all of your records will be deleted!
 
 ## <a name="c_1.15"></a>1.15 Temporal data (date, time, timezone), EXTRACT
 
-PostgreSQL (and most of the database systems) can deal with a large
-set of specific type of data with dedicated database data types and
-related functionalities in addition to string and numbers. In the next
-exercise, a new field is introduced to represent a
-[timestamp with time zone](http://www.postgresql.org/docs/9.1/static/datatype-datetime.html),
-i.e. date + time + time zone together (later on in this tutorial,
-another specific data type will be introduced to manage spatial data).
+PostgreSQL (and most of the database systems) can deal with a large set of specific type of data with dedicated database data types and related functionalities in addition to string and numbers. For wildlife tracking data, time and space are key information. Here we introduce a new data type to deal with temporal reference: **[timestamp with time zone](http://www.postgresql.org/docs/devel/static/datatype-datetime.html)**, i.e. date + time + time zone together. In particular, in PostgreSQL you have the following data types:
+* Timestamp 
+* Timestamp with time zone
+* Date
+* Time
+* Time with time zone
+* Interval
+
+Timestamp join date and time of the day, which is needed to identify a specific moment in time. In addition, the same moment can be expressed in different way according to the country in the world where you are. In fact, to unambiguously identify a moment in time you must specify the time zone. This has analogy with spatial reference system for spatial objects. In general, `Timestamp with time zone` is the correct way to express a moment in time because it is an "absolute" reference.
+Keep in mind that: 
+> "for timestamp with time zone, the internally stored value is always in UTC (Universal Coordinated Time, traditionally known as Greenwich Mean Time, GMT). An input value that has an explicit time zone specified is converted to UTC using the appropriate offset for that time zone. If no time zone is stated in the input string, then it is assumed to be in the time zone indicated by the system’s TimeZone parameter, and is converted to UTC using the offset for the timezone zone. [...]"
+ 
+and
+
+> "PostgreSQL doesn’t store the time zone they come from with your timestamp. Instead it converts to and from the input and output timezone."
+
+When you retrieve the data you specify the timezone you want to be visualized (server timezone by default). If you want to see the default server timezone run this query:
+
+```sql
+SHOW timezone;
+```
+
+Here some example of the different behaviour of timestamp with or without timezone:
+
+```sql
+SELECT
+  now() now_here,
+  now() AT TIME ZONE 'America/Los_Angeles' now_in_la,
+  '2018-06-17 10:00:00'::timestamp no_tz,
+  '2018-06-17 10:00:00'::timestamp with time zone tz_no_specified,
+  '2018-06-17 10:00:00+02'::timestamp with time zone AS tz_specified,
+  now()::date AS date,
+  now()::time AS time;
+```
+
+PostgreSQL implements an interval data type along with the time, date and timestamp with timezone data types. An interval describes a duration, like a month or two weeks, or even a millisecond:
+
+```sql
+SELECT 
+  interval '1 month' example1,
+  interval '2 weeks' example2,
+  2 * interval '1 week' example3,
+  78389 * interval '1 ms' example4,
+  now()-'2018-05-17 10:00:00+00'::timestamp with time zone example_diff;
+```
+
+You can use intervals to add or subtract time to a timestamp:
+
+```sql
+SELECT 
+  now(),
+  now() + interval '1 hour' example_operation;
+```
+
+You can extract specific elements of a timestamp (e.g. months, year, minute). In particular, `epoch` is very useful as it transform a date in seconds from a specific moment in time. DOing so, you can deal with time reference as integer.
+
+```sql
+SELECT 
+  now(),
+  extract (year from now()) as year,
+  extract (month from now()) as month,
+  extract (doy from now()) as doy,
+  extract (epoch from now()) as epoch,
+  extract (epoch from (now() + interval '1 hour') example_operation;
+```
+
+
+
 
 ## <a name="c_1.16"></a>1.16 Spatial objects in PostGIS
 
-
-Until few years ago, the spatial information produced by GPS sensors was managed and analyzed using dedicated software (GIS) in file-based data formats (e.g. shapefile). Nowadays, the most advanced approaches in data management consider the spatial component of objects (e.g. a moving animal) as one of its many attributes: thus, while understanding the spatial nature of your data is essential to proper analysis, from a software perspective spatial is (less and less) not special. Spatial databases are the technical tool needed to implement this perspective. They integrate spatial data types (vector and raster) together with standard data types that store the objects' other (non-spatial) associated attributes. Spatial data types can be manipulated by SQL through additional commands and functions for the spatial domain. This possibility essentially allows you to build a GIS using the existing capabilities of relational databases. Moreover, while dedicated GIS software is usually focused on analyses and data visualization, providing a rich set of spatial operations, few are optimized for managing large spatial data sets (in particular, vector data) and complex data structures. Spatial databases, in turn, allow both advanced management and spatial operations that can be efficiently undertaken on a large set of elements. This combination of features is becoming essential, as with animal movement data sets the challenge is now on the extraction of synthetic information from very large data sets rather than on the extrapolation of new information (e.g. kernel home ranges from VHF data) from limited data sets with complex algorithms. 
+Until some years ago, the spatial information produced by GPS sensors was managed and analyzed using dedicated software (GIS) in file-based data formats (e.g. shapefile). Nowadays, the most advanced approaches in data management consider the spatial component of objects (e.g. a moving animal) as one of its many attributes: thus, while understanding the spatial nature of your data is essential to proper analysis, from a software perspective spatial is (less and less) not special. Spatial databases are the technical tool needed to implement this perspective. They integrate spatial data types (vector and raster) together with standard data types that store the objects' other (non-spatial) associated attributes. Spatial data types can be manipulated by SQL through additional commands and functions for the spatial domain. This possibility essentially allows you to build a GIS using the existing capabilities of relational databases. Moreover, while dedicated GIS software is usually focused on analyses and data visualization, providing a rich set of spatial operations, few are optimized for managing large spatial data sets (in particular, vector data) and complex data structures. Spatial databases, in turn, allow both advanced management and spatial operations that can be efficiently undertaken on a large set of elements. This combination of features is becoming essential, as with animal movement data sets the challenge is now on the extraction of synthetic information from very large data sets rather than on the extrapolation of new information (e.g. kernel home ranges from VHF data) from limited data sets with complex algorithms. 
 
 --------------
 
