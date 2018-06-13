@@ -3,24 +3,58 @@
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
-- [Movement Ecology Data Management with PostgreSQL/PostGIS](#movement-ecology-data-management-with-postgresqlpostgis)
-    - [3.1 Introduction to R](#31-introduction-to-r)
-    - [3.2 Basic of Movement Ecology in R](#32-basic-of-movement-ecology-in-r)
-    - [3.3 From PostgreSQL to R: RPostgreSQL](#33-from-postgresql-to-r-rpostgresql)
-    - [3.4 Spatial inside: rpostgis](#34-spatial-inside-rpostgis)
-    - [3.5 Movement is about trajectories: rpostgisLT](#35-movement-is-about-trajectories-rpostgislt)
-    - [3.6 Keep it tidy: sf](#36-keep-it-tidy-sf)
-    - [3.7 What about R in the database? pl/R DEMO](#37-what-about-r-in-the-database-plr-demo)
+- [3. Movement Ecology Data Analysis in R](#3-movement-ecology-data-analysis-in-r)
+    - [3.1  Introduction to R](#31--introduction-to-r)
+        - [3.1.1 Features of R](#311-features-of-r)
+    - [3.2 An Introduction to Movement Ecology in R](#32-an-introduction-to-movement-ecology-in-r)
+        - [3.2.1 Topic 1: Trajectories in R](#321-topic-1-trajectories-in-r)
+            - [Exercise 1](#exercise-1)
+        - [3.2.2 Topic 2: Cleaning trajectories](#322-topic-2-cleaning-trajectories)
+            - [Exercise 2](#exercise-2)
+        - [3.2.3 Topic 3: Interpolation in time and space](#323-topic-3-interpolation-in-time-and-space)
+            - [Exercise 3](#exercise-3)
+        - [3.2.4 Topic 4: Home ranges](#324-topic-4-home-ranges)
+            - [Exercise 4](#exercise-4)
+        - [3.2.5 Topic 5: Random walks](#325-topic-5-random-walks)
+            - [Exercise 5](#exercise-5)
+        - [3.2.6 Topic 6: Habitat selection](#326-topic-6-habitat-selection)
+    - [3.3 There and back again: Connecting PostGIS and R](#33-there-and-back-again-connecting-postgis-and-r)
+        - [3.3.X Keep it tidy: sf](#33x-keep-it-tidy-sf)
+    - [3.4 Extending PostGIS with Pl/R (DEMO)](#34-extending-postgis-with-plr-demo)
 
 <!-- markdown-toc end -->
 
 
-## 3.1 Introduction to R
+## 3.1  Introduction to R
 
-R is a statistical environment based on a command-line language. R is
-a free and open-source software. You can thus *freely* use it,
-*freely* distribute it, and *freely* modify and redistribute it. R is
-available on the [R-project website](https://www.r-project.org).
+Until now, we explored the wide set of tools that PostgreSQL and
+PostGIS offer to process and analyse tracking data. Nevertheless, a
+database is not specifically designed to perform advanced statistical
+analysis or to implement complex analytical algorithms, which are key
+elements to extract scientific knowledge from the data for both
+fundamental and applied research. In fact, these functionalities must
+be part of an information system that aims at a proper handling of
+wildlife tracking data. The possibility of a tighter integration of
+analytical functions with the database is particularly interesting
+because the availability of large amounts of information from the new
+generation sensors blurs the boundary between data analysis and data
+management. Tasks like outlier filtering, real-time detection of
+specific events (e.g. virtual fencing), or meta-analysis (analysis of
+results of a first analytical step, e.g. variation in home range size
+in the different months of a year) are clearly in the overlapping area
+between data analysis and management.
+
+To analyse data, and movement data in particular, R is probably the
+best solution. R is an open source programming language and
+environment for statistical computing and graphics.  R is a free and
+open-source software. You can thus *freely* use it, *freely*
+distribute it, and *freely* modify and redistribute it.  It is a
+popular choice for data analysis in academics, with its popularity for
+ecological research increasing rapidly.  R is available on the [R
+Project website](https://www.r-project.org).
+
+
+### 3.1.1 Features of R
 
 * R comes with an entire ecosystem of packages, which provide
   additional features to the software. Prominent packages are hosted
@@ -73,20 +107,432 @@ capabilities of R, and how to get started with different data types
 and graphics.
 
 
-## 3.2 Basic of Movement Ecology in R
+## 3.2 An Introduction to Movement Ecology in R
+
+For the analysis of animal tracking data, we often use functions from
+the adehabitat family which consists of four packages:
+
+* `adehabitatMA`: management of raster maps;
+* `adehabitatLT`: analysis of trajectories;
+* `adehabitatHR`: home range estimation;
+* `adehabitatHS`: habitat-selection analysis.
+
+Other packages will be useful for this lesson:
+
+* `sp`: spatial data in R;
+* `raster`: special package for raster data;
+* `rgdal`: bindings to GDAL;
+* `lubridate`: management of dates/timestamps in R;
+* `rpostgis`: interface between R and PostGIS;
+* `rpostgisLT`: transfer animal trajectories between R and PostGIS.
+
+We will also need the package `devtools` to access packages hosted on
+GitHub.
+
+Let's install all necessary packages right now:
+
+```r
+install.packages(c("adehabitatHS", "raster", "lubridate", "rpostgis", "devtools"))
+```
+
+Finally, we install the packages `basr` and `hab` directly from
+GitHub, with the help of `devtools`:
+
+```r
+library("devtools")
+install_github("basille/basr")
+install_github("basille/hab")
+install_github("mablab/rpostgisLT")
+```
 
 
-## 3.3 From PostgreSQL to R: RPostgreSQL
+### 3.2.1 Topic 1: Trajectories in R
+
+For the analysis of movement data, we will mostly rely on the class
+`ltraj` from the `adehabitatLT` package. This class is intended to
+store trajectories of animals. Trajectories of type I correspond to
+trajectories for which the time has not been recorded (e.g.  sampling
+of tracks in the snow). Trajectories of type II correspond to
+trajectories for which the time is available for each relocation
+(mainly GPS and radio-tracking), that is the focus of this week.
+
+Let's build step by step a `ltraj` object using an example data set
+provided in the package (wild boar tracking data in southern
+France). We first load the package and the data:
+
+```r
+library("hab")
+data(puechabonsp)
+```
+
+Then check what we have in this dataset:
+
+```r
+names(puechabonsp)
+```
+
+We first extract the maps themselves, and plot them:
+
+```r
+(map <- puechabonsp$map)
+mimage(puechabonsp$map)
+```
+
+We now extract the location dataset, and explore it a bit:
+
+```r
+locs <- puechabonsp$relocs
+summary(locs)
+head(locs)
+image(puechabonsp$map)
+points(locs, pch = 20, col = locs$Name)
+```
+
+The column for dates is not stored in a class that is recognized as
+such in R. We need to do it now, using the package `lubridate`:
 
 
-## 3.4 Spatial inside: rpostgis
+```r
+class(locs$Date)
+library("lubridate")
+locs$Date <- ymd(paste0("19", locs$Date), tz = "UTC")
+head(locs$Date)
+class(locs$Date)
+```
+
+We can now store the data into a `ltraj` object, using the `as.ltraj`
+function, and explore the structure of this object:
+
+```r
+(tr1 <- as.ltraj(coordinates(locs), date = locs$Date, id = locs$Name))
+class(tr1)
+tr1[[1]]
+str(tr1[[1]])
+```
+
+This allows us to display each individual trajectory:
+
+```r
+plot(tr1, spixdf = map)
+plot(tr1, by = "none", spixdf = map, ppar = list(col = c(Brock = "blue", Calou = "orange", Chou = "green", Jean = "red"), pch = 20), lpar = list(col = c(Brock = "blue", Calou = "orange", Chou = "green", Jean = "red")))
+```
+
+We can quickly look at the distribution of step lengths:
+
+```r
+dtr1 <- ld(tr1)
+head(dtr1)
+hist(dtr1$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of wild boar step lengths")
+lines(density(dtr1$dist, na.rm = TRUE), lwd = 3)
+```
+
+... and turning angles (using a circular histogram):
+
+```r
+rose.diag(na.omit(dtr1$rel.angle), bins = 18, prop = 1.5)
+```
 
 
-## 3.5 Movement is about trajectories: rpostgisLT
+#### Exercise 1
+
+You will now import in R all location data from the database, and
+build them into a `ltraj` object. Import and export will be the
+subject of another lesson, let's just do it now once and for all
+using `rpostgis` and `rgdal` without further explanation:
+
+```r
+library("rpostgis")
+library("rgdal")
+drv <- dbDriver("PostgreSQL")
+con <- dbConnect(drv, dbname = "gps_tracking_db", host = "localhost", user = "<user>", password = "<password>")
+tz(locs2$acquisition_time) <- "UTC"
+locs2 <- spTransform(pgGetGeom(con, c("main", "gps_data_animals")), CRS("+init=epsg:32632"))
+head(locs2)
+```
+
+You will now build the `ltraj`, with the name `tr2`, and only keep
+individual #5. If you manage to do it properly, try to explore
+dynamically the trajectory with the function `trajdyn`, and play with
+the different parameters:
+
+```r
+trajdyn(tr2)
+```
 
 
-## 3.6 Keep it tidy: sf
+### 3.2.2 Topic 2: Cleaning trajectories
+
+Assuming that there are only valid points in the trajectory, there is
+generally two things that need to be addressed: missing values and
+exact timestamps. Both are related to the temporal aspect of
+movement. Let's thus look at the temporal interval between every
+location, in days:
+
+```r
+plotltr(tr1, "dt/3600/24")
+```
+
+For Chou, there is a huge gap in the middle, because the individual
+was monitored two successive summers. We thus create two bursts for
+this individual, one per summer:
+
+```r
+tr1 <- cutltraj(tr1, "dt > 100*3600*24", nextr = TRUE)
+plotltr(tr1, "dt/3600/24")
+```
+
+As we can see, although there is supposed to be one day in between
+successive locations, there can be up to 8 days in between. To
+'regularize' the trajectory, we thus need to add missing values (NAs)
+in the trajectory for those days where there is no data. For this, we
+need to use the function `setNA` with a reference date (which will be
+the oldest date of the dataset):
+
+```r
+min(locs$Date)
+(ref <- dmy("29071992", tz = "UTC"))
+(tr1 <- setNA(tr1, ref, 1, units = "day"))
+plotltr(tr1, "dt/3600/24")
+head(tr1[[1]])
+```
+
+The intervals are now perfectly regular, with one day in between
+successive relocations. We can also see where NAs have been placed
+(this could be the subject of a separate analysis!):
+
+```r
+plotNAltraj(tr1, addlines = FALSE, ppar = list(pch = 15))
+```
 
 
-## 3.7 What about R in the database? pl/R DEMO
+#### Exercise 2
+
+You will first start by checking and adding missing data in the roe
+deer dataset (`tr2`). Are the missing data randomly distributed in the
+trajectory? (look up the function `runsNAltraj`)
+
+Now, the wild boar dataset does not include the time of the day: the
+temporal precision is the day. In the case of more precise times, like
+for the roe deer case, the recorded time will generally not be the
+exact scheduled time: the GPS needs some time to find a location. For
+instance, if the GPS is programmed to take one relocation precisely at
+2:00, it will probably do it a few minutes later, maybe at 2:03:24. To
+have a perfectly regular trajectory, we thus need to round the
+recorded times to the expected times. You will do it on the roe deer
+dataset (`tr2`), using the `sett0` function.
+
+
+### 3.2.3 Topic 3: Interpolation in time and space 
+
+In this section, we are going to interpolate in time and in
+space. Let's start by interpolation in time, i.e. linear
+interpoloation of missing locations:
+
+```r
+(tr1t <- redisltraj(na.omit(tr1), 3600*24, type = "time"))
+col <- ifelse(is.na(tr1[[2]]$x), "white", "black")
+plot(tr1t[2], ppar = list(pch = 21, col = "black", bg = list(Calou.1 = col[-length(col)])))
+```
+
+In a second step, we interpolate in space, that is we rediscretize the
+trajectory with constant step length of 100 m:
+
+```r
+summary(dtr1$dist)
+(tr1s <- redisltraj(tr1, 100, nnew = 10))
+plot(tr1s[2])
+```
+
+
+#### Exercise 3
+
+You will now rediscretize roe deer trajectories with constant step
+length approximately equal to the median step length. Does the result
+make sense?
+
+
+### 3.2.4 Topic 4: Home ranges
+
+We will now look at home ranges. We will first start with classical
+home ranges methods that do not take movement into account, before
+incorporating movement information along steps. Let us start with
+Minimum Convex Polygons:
+
+```r
+tr1sp <- ltraj2spdf(tr1)
+summary(tr1sp)
+mcp1 <- mcp(tr1sp["id"])
+plot(mcp1)
+plot(tr1sp, col = as.data.frame(tr1sp)[, "id"], add = TRUE)
+```
+
+A second classical approach is kernel home ranges, which estimates a
+utilization distribution:
+
+```r
+kud1 <- kernelUD(tr1sp["id"], grid = 100, same4all = TRUE)
+image(kud1)
+image(kud1[[2]])
+plot(mcp1[2, ], add = TRUE)
+```
+
+Finally, we can estimate home ranges using the Brownian bridge kernel
+approach, which incorporates information along movement steps:
+
+```r
+liker(tr1, sig2 = 50, rangesig1 = c(1, 10))
+kbb1 <- kernelbb(tr1, sig1 = 2, sig2 = 50, grid = 100, same4all = TRUE)
+image(kbb1)
+image(kbb1[[2]])
+plot(mcp1[2, ], add = TRUE)
+```
+
+#### Exercise 4
+
+Simply estimate Brownian bridge kernels on the roe deer data set, and
+compare it to MCP!
+
+
+
+### 3.2.5 Topic 5: Random walks
+
+On Wednesday morning, we learned the importance of random walk theory
+in movement ecology. Now is the time to put it in practice! We will
+start by simulating a simple random walk for 1000 steps
+
+```r
+rw1 <- simm.crw(1:1000, r = 0, burst = "RW r = 0")
+plot(rw1, addpoints = FALSE)
+```
+
+Let's have a look at step length and turning angle distributions:
+
+```r
+drw1 <- ld(rw1)
+hist(drw1$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of RW step lengths")
+lines(density(drw1$dist, na.rm = TRUE), lwd = 3)
+rose.diag(na.omit(drw1$rel.angle), bins = 18, prop = 3)
+```
+
+We can see the diffusive property of the random walk by increasing the
+number of steps to 100000:
+
+```r
+rw2 <- simm.crw(1:100000, r = 0, burst = "RW 100000 steps")
+plot(rw2, addpoints = FALSE)
+```
+
+The next step is to simulate correlated random walks by increasing the
+concentration parameter of turning angles (`r`). Remember that the
+simple RW is a specific case of CRW:
+
+```r
+crw0 <- simm.crw(1:1000, r = 0, id = "CRW0 r = 0 (RW)", h = 8)
+crw1 <- simm.crw(1:1000, r = 0.6, id = "CRW1 r = 0.6", h = 5)
+crw2 <- simm.crw(1:1000, r = 0.9, id = "CRW2 r = 0.9", h = 2)
+crw3 <- simm.crw(1:1000, r = 0.99, id = "CRW3 r = 0.99")
+mov <- c(crw0, crw1, crw2, crw3)
+plot(mov, addpoints = FALSE)
+```
+
+We can also check step length and turning angle distributions:
+
+```r
+dcrw2 <- ld(crw2)
+hist(dcrw2$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of CRW step lengths")
+lines(density(dcrw2$dist, na.rm = TRUE), lwd = 3)
+rose.diag(na.omit(dcrw2$rel.angle), bins = 18, prop = 1.5)
+```
+
+#### Exercise 5
+
+Now you will generate a Brownian bridge from the point (0,0) to the
+point (100,100) using the function `simm.bb`. Try to vary the number
+of steps, as well as the end point.
+
+In a second step, simulate several Levy walks using the `simm.levy`
+and vary the different parameters to understand their effect.
+
+
+
+### 3.2.6 Topic 6: Habitat selection
+
+In this section, we will see how to perform a simple approach of Step
+Selection Functions. The first step is to create random steps, by
+drawing random step lengths and random turning angles within the set
+of observed steps:
+
+```r
+rdtr2 <- rdSteps(tr2, reproducible = TRUE)
+head(rdtr2)
+```
+
+The result is a data frame, that we convert to a
+`SpatialPointsDataFrame` using the coordinates at the end of the step:
+
+```r
+coordinates(rdtr2) <- data.frame(x = rdtr2$x + rdtr2$dx, y = rdtr2$y + rdtr2$dy)
+proj4string(rdtr2) <- "+init=epsg:32632"
+plot(rdtr2, pch = 20, cex = 0.2)
+segments(x0 = rdtr2@data$x, y0 = rdtr2@data$y, x1 = rdtr2@data$x + rdtr2$dx, y = rdtr2@data$y + rdtr2$dy)
+rd1tr2 <- subset(rdtr2, case == 1)
+segments(x0 = rd1tr2@data$x, y0 = rd1tr2@data$y, x1 = rd1tr2@data$x + rd1tr2$dx, y = rd1tr2@data$y + rd1tr2$dy, col = "red")
+```
+
+The next step is to intersect all steps (observed and random) to the
+environmental variables of choice. Here we work with the land cover
+(Corine Land Cover) and the elevation (Digital Elevation Model), that
+we import with `rpostgis` without further explanation:
+
+```r
+corine <- pgGetRast(con, c("env_data", "corine_land_cover"))
+plot(corine)
+
+dem <- pgGetRast(con, c("env_data", "srtm_dem"))
+plot(dem)
+```
+
+We now extract the environmental variables at the end of the step; we
+also reclassify the land cover type into a limited number of
+categories:
+
+```r
+library("raster")
+rdtr2@data <- data.frame(rdtr2@data, dem = extract(dem, rdtr2), corine = extract(corine, rdtr2))
+table(rdtr2$corine)
+
+library("basr")
+(matsimp <- matrix(c(2, 18, 20, 21, 23, 24, 25, 26, 27, 29, 31, 32, "open", "agri", "agri", "agri", "forest", "forest", "forest", "open", "open", "open", "open", "open"), ncol = 2))
+rdtr2$corine <- reclass(rdtr2$corine, matsimp, factor = TRUE)
+table(rdtr2$corine)
+```
+
+Finally, given that the land cover type is a factor (i.e. qualitative
+variable), we need to convert it to a set of dummy variables, one of
+which will be dropped and used as a reference later:
+
+```r
+library("ade4")
+rdtr2@data <- data.frame(rdtr2@data, acm.disjonctif(rdtr2@data[, "corine", drop = FALSE]))
+head(rdtr2)
+```
+
+We can now run the conditional logistic regression on each strata (one
+observed step + 10 associated random steps) to check the selection on
+these two variables:
+
+```r
+library("survival")
+ssf1 <- clogit(case ~ dem + corine.forest + corine.open + strata(strata), data = rdtr2, method = "breslow")
+summary(ssf1)
+```
+
+
+## 3.3 There and back again: Connecting PostGIS and R
+
+
+### 3.3.X Keep it tidy: sf
+
+
+## 3.4 Extending PostGIS with Pl/R (DEMO)
 

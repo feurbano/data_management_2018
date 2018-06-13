@@ -1,0 +1,108 @@
+# 3. Movement Ecology Data Analysis in R (ANSWERS)
+
+
+## Connection to FEM DB
+
+```r
+## use mbasille
+## psw tigana
+```
+
+
+### 3.2.1 Topic 1: Trajectories in R
+
+You will now build the `ltraj`, with the name `tr2`, and only keep
+individual #5. 
+
+```r
+## Connection to FEM DB
+con <- dbConnect(drv, dbname = "gps_tracking_db", host = "eurodeer2.fmach.it", user = "basic_user", password = "tr3nt02018")
+
+### Trajectories in R
+str(locs2)
+tr2 <- as.ltraj(coordinates(locs2), locs2$acquisition_time, locs2$animals_id)
+(tr2 <- tr2[5])
+plot(tr2)
+```
+
+```r
+### Step lengths
+dtr2 <- ld(tr2)
+hist(dtr2$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of roe deer step lengths")
+lines(density(dtr2$dist, na.rm = TRUE), lwd = 3)
+
+### Turning angles
+rose.diag(na.omit(dtr2$rel.angle), bins = 18, prop = 2.5)
+```
+
+
+### 3.2.2 Topic 2: Cleaning trajectories
+
+You will first start by checking and adding missing data in the roe
+deer dataset (`tr2`). Are the missing data randomly distributed in the
+trajectory? (look up the function `runsNAltraj`)
+
+```r
+### Regularization
+plotltr(tr2, "dt/3600")
+(ref <- ymd_hms("2006-11-13 01:00:00", tz = "UTC"))
+(tr2 <- setNA(tr2, ref, 4, units = "hour"))
+plotNAltraj(tr2)
+plotNAltraj(tr2, addlines = FALSE, ppar = list(pch = "|"))
+runsNAltraj(tr2)
+
+(tr2 <- sett0(tr2, ref, 4, units = "hour"))
+plotltr(tr2, "dt/3600")
+```
+
+
+### 3.2.3 Topic 3: Interpolation in time and space 
+
+You will now rediscretize roe deer trajectories with constant step
+length approximately equal to the median step length. Does the result
+make sense?
+
+```r
+### Interpolation
+median(ld(tr2)$dist, na.rm = TRUE)
+(tr2s <- redisltraj(tr2, 160))
+plot(tr2s)
+```
+
+
+### 3.2.4 Topic 4: Home ranges
+
+Simply estimate Brownian bridge kernels on the roe deer data set, and
+compare it to MCP!
+
+```r
+### Home ranges
+tr2sp <- ltraj2spdf(tr2)
+mcp2 <- mcp(tr2sp["id"])
+
+liker(tr2, sig2 = 10, rangesig1 = c(1, 10))
+kbb2 <- kernelbb(tr2, sig1 = 2, sig2 = 10, grid = 100)
+image(kbb2)
+plot(mcp2, add = TRUE)
+```
+
+
+### 3.2.5 Topic 5: Random walks
+
+Now you will generate a Brownian bridge from the point (0,0) to the
+point (100,100) using the function `simm.bb`. Try to vary the number
+of steps, as well as the end point.
+
+```r
+### Random walks
+bb1 <- simm.bb(1:100, end = c(100, 100))
+plot(bb1)
+```
+
+In a second step, simulate several Levy walks using the `simm.levy`
+and vary the different parameters to understand their effect.
+
+```r
+lev1 <- simm.levy(1:1000)
+plot(lev1)
+```
