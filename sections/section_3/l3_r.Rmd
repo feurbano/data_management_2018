@@ -17,6 +17,61 @@
 
 ## 3.1 Introduction to R
 
+R is a statistical environment based on a command-line language. R is
+a free and open-source software. You can thus *freely* use it,
+*freely* distribute it, and *freely* modify and redistribute it. R is
+available on the [R-project website](https://www.r-project.org).
+
+* R comes with an entire ecosystem of packages, which provide
+  additional features to the software. Prominent packages are hosted
+  on CRAN, which has now more than 12,000 packages. Some packages
+  provide generic functionalities that are useful in most cases
+  (modeling, graphs, etc.), other are heavily specialized on specific
+  tasks (e.g. parallel processing, connection to a database, habitat
+  selection, finances, etc.). The ecosystem is now so rich that if a
+  statistical tool or feature has been developed, the chances that it
+  exists as a R package are fairly high. You can check [CRAN task
+  views](https://cran.r-project.org/web/views/) to find out what
+  packages are available on specific subjects.
+
+* R can handle pretty much any type of input, from plain text files
+  (`.txt` or `.csv` files for instance), Excel spreadsheets, database
+  tables, or even data copied in the clipboard. R can also scrape
+  information from the web, either by direct download of files, or by
+  parsing web pages.
+
+* R allows modeling at an advanced level. Pretty much all statistical
+  models are available directly in base R or in external packages,
+  such as Generalized linear models (GLM), mixed models (with random
+  factors), Generalized additive models (GAM), Random forest, machine
+  learning, etc.
+
+* R has truly amazing capabilities when it comes to graphics, with
+  incredible flexibility, and amazing results. Interested users may
+  want to have a look at the `ggplot2` package (see next point).
+
+* The [`tidyverse`](https://tidyverse.org/) is a cohesive set of
+  packages on its own. It notably provides a graphic system that
+  greatly improve base R capabilities by implementing a grammar of
+  graphics (package `ggplot2`), and also provides a very clean
+  approach of dealing with tabular data that relies on database
+  principles (package `dplyr`). Although familiarity with these
+  packages brings many benefits, this tutorial does not cover the
+  `tidyverse`.
+
+* As a statistical engine, R unleashes advanced uses of its
+  capabilities through external applications or media. Most notably, R
+  allows for reproducible science through the use of
+  [RMarkdown](http://rmarkdown.rstudio.com/) files that automatically
+  generate reports, as well as the development of web applications
+  that allows dynamic interface to data and statistical models through
+  the [Shiny package](https://cran.r-project.org/package=shiny).
+
+An introductory tutorial can be found
+[here](https://ase-research.org/R/intro/), and present basic
+capabilities of R, and how to get started with different data types
+and graphics.
+
 
 ## 3.2 Basic of Movement Ecology in R
 
