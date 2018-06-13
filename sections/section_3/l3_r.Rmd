@@ -1,0 +1,37 @@
+# 3. Movement Ecology Data Analysis in R
+
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Movement Ecology Data Management with PostgreSQL/PostGIS](#movement-ecology-data-management-with-postgresqlpostgis)
+    - [3.1 Introduction to R](#31-introduction-to-r)
+    - [3.2 Basic of Movement Ecology in R](#32-basic-of-movement-ecology-in-r)
+    - [3.3 From PostgreSQL to R: RPostgreSQL](#33-from-postgresql-to-r-rpostgresql)
+    - [3.4 Spatial inside: rpostgis](#34-spatial-inside-rpostgis)
+    - [3.5 Movement is about trajectories: rpostgisLT](#35-movement-is-about-trajectories-rpostgislt)
+    - [3.6 Keep it tidy: sf](#36-keep-it-tidy-sf)
+    - [3.7 What about R in the database? pl/R DEMO](#37-what-about-r-in-the-database-plr-demo)
+
+<!-- markdown-toc end -->
+
+
+## 3.1 Introduction to R
+
+
+## 3.2 Basic of Movement Ecology in R
+
+
+## 3.3 From PostgreSQL to R: RPostgreSQL
+
+
+## 3.4 Spatial inside: rpostgis
+
+
+## 3.5 Movement is about trajectories: rpostgisLT
+
+
+## 3.6 Keep it tidy: sf
+
+
+## 3.7 What about R in the database? pl/R DEMO
+
