@@ -616,7 +616,7 @@ SELECT
   now() + interval '1 hour' example_operation;
 ```
 
-You can extract specific elements of a timestamp (e.g. months, year, minute). In particular, `epoch` is very useful as it transform a date in seconds from a specific moment in time. DOing so, you can deal with time reference as integer.
+You can extract specific elements of a timestamp (e.g. months, year, minute). In particular, `epoch` is very useful as it transform a date in seconds from a specific moment in time. Doing so, you can deal with time reference as integer.
 
 ```sql
 SELECT 
@@ -625,11 +625,10 @@ SELECT
   extract (month from now()) as month,
   extract (doy from now()) as doy,
   extract (epoch from now()) as epoch,
-  extract (epoch from (now() + interval '1 hour') example_operation;
+  extract (epoch from now()) - extract (epoch from (now() - interval '1 minute')) difference_seconds;
 ```
 
-
-
+Many more tools to manage time are described in the **[PostgreSQL documentation](https://www.postgresql.org/docs/devel/static/functions-datetime.html)**.
 
 ## <a name="c_1.16"></a>1.16 Spatial objects in PostGIS
 
