@@ -1021,12 +1021,19 @@ SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
 Once the SRID code is set you can transform it into another coordinate system:
 
 ```
-Select ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035);
+SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035);
 ```
 
-If you compare these two measurement units are clearly different (wgs84 = degrees; Europe = meters)
+If you compare the units are clearly different (wgs84 = degrees; Europe = meters):
 
-Note that when performing spatial operations using two data sources with different reference systems will not give an output. Thus, when performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
+```
+SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035) etrs89; 
+```
+Note that when performing spatial operations using two data sources with different reference systems will not give any output. Thus, when performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
+
+**Take home message:** 
+Coordinates only do not identify a position on earth and the same position has different values according to the reference system.
+
 
 ## <a name="c_1.19"></a>1.19 Create a point from coordinates
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
