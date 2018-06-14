@@ -1012,20 +1012,19 @@ All projections available in a postgresql spatial database can be called using:
 SELECT * FROM spatial_ref_sys;
 ```
 
-Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). The coordinate system of a spatial objects can be set as follows:
+Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). 
 
+The coordinate system of a spatial objects can be set as follows:
 ```
 SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
 ```
 
 Once the SRID code is set you can transform it into another coordinate system:
-
 ```
-SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035);
+SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632);
 ```
 
-If you compare the units are clearly different (wgs84 = degrees; Europe = meters):
-
+If you compare the units are clearly different (WGS84 = degrees; UTM = meters):
 ```
 SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035) etrs89; 
 ```
@@ -1033,7 +1032,6 @@ Note that when performing spatial operations using two data sources with differe
 
 **Take home message:** 
 Coordinates only do not identify a position on earth and the same position has different values according to the reference system.
-
 
 ## <a name="c_1.19"></a>1.19 Create a point from coordinates
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
