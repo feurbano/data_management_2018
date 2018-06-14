@@ -1008,15 +1008,21 @@ There are two types of geographical reference systems, global or spherical refer
 
 All projections available in a postgresql spatial database can be called using:
 
-Code ...
+```
+SELECT * FROM spatial_ref_sys;
+```
 
-Each reference system has a specific spatial reference identifier (SRID). For instance WGS84 4326, Europe 3035, UTM32 32632. The coordinate system of a spatial objects can be set as follows:
+Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). The coordinate system of a spatial objects can be set as follows:
 
-Select set_srid(st_makepoint(11.21,56.76),4326) wgs84
+```
+SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
+```
 
-Once the SRID code is set you can transform it in whichever other coordinate system:
+Once the SRID code is set you can transform it into another coordinate system:
 
-Select st_transform(set_srid(st_makepoint(11.21,56.76),4326),3035) europe
+```
+Select ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035);
+```
 
 If you compare these two measurement units are clearly different (wgs84 = degrees; Europe = meters)
 
