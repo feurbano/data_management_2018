@@ -1,14 +1,6 @@
 # 3. Movement Ecology Data Analysis in R (ANSWERS)
 
 
-## Connection to FEM DB
-
-```r
-## use mbasille
-## psw tigana
-```
-
-
 ### 3.2.1 Topic 1: Trajectories in R
 
 You will now build the `ltraj`, with the name `tr2`, and only keep
@@ -17,6 +9,8 @@ individual #5.
 ```r
 ## Connection to FEM DB
 con <- dbConnect(drv, dbname = "gps_tracking_db", host = "eurodeer2.fmach.it", user = "basic_user", password = "tr3nt02018")
+
+con_adm <- dbConnect(drv, dbname = "gps_tracking_db", host = "eurodeer2.fmach.it", user = "mbasille", password = "tigana")
 
 ### Trajectories in R
 str(locs2)
@@ -105,4 +99,49 @@ and vary the different parameters to understand their effect.
 ```r
 lev1 <- simm.levy(1:1000)
 plot(lev1)
+```
+
+
+#### 3.3.1.2 Export data to PostGIS
+
+
+```{r}
+dbWriteTable(con_adm, c("temp", "puechcirc"), dfpu)
+```
+
+```{r}
+query <- "ALTER TABLE temp.puechcirc ADD COLUMN pts_geom geometry(POINT, 32632);"
+dbSendQuery(con_adm, query)
+query <- "CREATE INDEX puechcirc_pts_geom_idx ON temp.puechcirc USING GIST (pts_geom);"
+dbSendQuery(con_adm, query)
+query <- "UPDATE temp.puechcirc SET pts_geom=ST_SetSRID(ST_MakePoint(x, y), 32632)
+WHERE x IS NOT NULL AND y IS NOT NULL;"
+dbSendQuery(con_adm, query)
+query <- "COMMENT ON TABLE temp.puechcirc IS 'Telemetry data (as points) from 2 wild boars at Puechabon (from RPostgreSQL).';"
+dbSendQuery(con_adm, query)
+```
+
+```{r}
+pgWriteRast(con_adm, c("temp", "elev_reclass"), raster = ele.rec)
+```
+
+```{r}
+head(dfpu)
+
+dbWriteTable(con_adm, c("temp", "dfpu_table"), dfpu)
+df1 <- dbReadTable(con_adm, c("temp", "dfpu_table"))
+head(df1)
+
+dbWriteDataFrame(con_adm, c("temp", "dfpu"), dfpu)
+df2 <- dbReadDataFrame(con_adm, c("temp", "dfpu"))
+head(df2)
+str(df2)
+
+attributes(dfpu$date)
+attributes(df1$date)
+attributes(df2$date)
+
+dfpu$date[1]
+df1$date[1]
+df2$date[1]
 ```
