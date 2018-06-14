@@ -1025,7 +1025,7 @@ SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632);
 
 If you compare the units are clearly different (WGS84 = degrees; UTM = meters):
 ```
-SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),3035) etrs89; 
+SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632) utm32; 
 ```
 Note that when performing spatial operations using two data sources with different reference systems will not give any output. Thus, when performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
 
