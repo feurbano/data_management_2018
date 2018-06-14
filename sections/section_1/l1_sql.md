@@ -996,14 +996,31 @@ You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least 
 
 ## <a name="c_1.18"></a>1.18 Reference systems and projections 
 
-The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are [the (Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), [the Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some interesting links to explore on map projections and map distortion.
+The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the [(Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), the [Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some interesting links to explore on map projections and map distortion. 
 
 * [The True Size](https://thetruesize.com)
 * [Map distrotion](http://www.gis.osu.edu/misc/map-projections/)
 * [Map characteristics](http://bl.ocks.org/syntagmatic/raw/ba569633d51ebec6ec6e/)
 * [Compare projections](https://map-projections.net/compare.php?p1=a4-projection&p2=adams-hemispheres&w=0)
 
+Coordinates alone do not allow to understand where on earth spatial objects (points, lines, polygons) are located. In addition a corresponding geographical reference system needs to be identified. A geographical reference system uses a datum, an ellipsoid, a projection and a reference zero X and Y axis, in order to assign coordinates to certain locations. Some commonly used geographical reference systems are [WGS84](http://spatialreference.org/ref/epsg/4326/), [ETRS89](http://spatialreference.org/ref/epsg/3035/), [Universal Transverse Mercator (UTM) coordinate system](https://gisgeography.com/utm-universal-transverse-mercator-projection/).
+There are two types of geographical reference systems, global or spherical reference systems and projected coordinate systems often defined more locally (e.g., country, continental). A typical example for of a global reference system is WGS84, 
+Global have a unique zero reference on the x and y axis on the earth (e.g.,  meridian of greenwich, equator) global reference systems usually have as measurement unit degrees. A local reference system defines a local zero reference. Local reference systems are often in meters. 
+UTM is a special case and splits the earth into a grid, defining a x/y zero reference for each grid cell. Each gridcell is projected to a flat surface separately.  With UTM a global uniform system is  available, with local offsets, that allows to express coordinates locally in meters instead of degrees. Most common reference systems used are WGS84, UTM and for Europe blabla. All projections available in the database can be called using :
 
+Code ...
+
+Each reference system has a specific spatial reference identifier (SRID). For instance WGS84 4326, Europe 3035, UTM32 32632. The coordinate system of a spatial objects can be set as follows:
+
+Select set_srid(st_makepoint(11.21,56.76),4326) wgs84
+
+Once the SRID code is set you can transform it in whichever other coordinate system:
+
+Select st_transform(set_srid(st_makepoint(11.21,56.76),4326),3035) europe
+
+If you compare these two measurement units are clearly different (wgs84 = degrees; Europe = meters)
+
+Note that when performing spatial operations using two data sources with different reference systems will not give an output. Thus, when performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
 
 ## <a name="c_1.19"></a>1.19 Create a point from coordinates
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
