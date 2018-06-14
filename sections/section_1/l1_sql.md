@@ -998,7 +998,7 @@ You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least 
 
 The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the [(Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), the [Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some more interesting links to explore on map projections and map distortion. 
 
-* [Map distrotion](http://www.gis.osu.edu/misc/map-projections/)
+* [Map distortion](http://www.gis.osu.edu/misc/map-projections/)
 * [Map characteristics](http://bl.ocks.org/syntagmatic/raw/ba569633d51ebec6ec6e/)
 * [Compare projections](https://map-projections.net/compare.php?p1=a4-projection&p2=adams-hemispheres&w=0)
 
