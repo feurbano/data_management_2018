@@ -56,6 +56,6 @@
 ## 5. Resource Selection Analysis in Movement Ecology (Van Loon, 4 h)
 
 ## 6. Special Topics
-* 6.1 The Ecological Context Built from Satellites, including Sentinel (Delucchi, 30 minutes)
+* 6.1 The Ecological Context Built from Satellites, including Sentinel (Rocchini, 30 minutes)
 * 6.2 Dealing with Acceleration Data (Berger, 30 minutes)
 * 6.3 Data sharing and Data Standards for a Better Science (Davidson, 30 minutes)
