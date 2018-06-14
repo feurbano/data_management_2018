@@ -995,6 +995,16 @@ You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least 
 > add info on connection from material eurodeer
 
 ## <a name="c_1.18"></a>1.18 Reference systems and projections 
+
+The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the (Transverse) Mercator projection, the Robinson projection and the Lambert Conformal Conic. Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some interesting links to explore on map projections and map distortion.
+
+* [The True Size](https://thetruesize.com)
+* [Map distrotion](http://www.gis.osu.edu/misc/map-projections/)
+* [Map characteristics](http://bl.ocks.org/syntagmatic/raw/ba569633d51ebec6ec6e/)
+* [Compare projections](https://map-projections.net/compare.php?p1=a4-projection&p2=adams-hemispheres&w=0)
+
+
+
 ## <a name="c_1.19"></a>1.19 Create a point from coordinates
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
 ## <a name="c_1.21"></a>1.21 Calculate length of a trajectory
