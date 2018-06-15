@@ -19,19 +19,19 @@
 * 1.9 HAVING
 * 1.10 Joining multiple tables
 * 1.11 LEFT JOIN
-* 1.12  Subqueries used in FROM statement
+* 1.12 Subqueries used in FROM statement
 * 1.13 WINDOW functions
 * 1.14 INSERT, UPDATE, DELETE
 * 1.15 Temporal data (date, time, timezone), EXTRACT
 * 1.16 Spatial objects in PostGIS
-* 1.17 Visualize the coordinates of a spatial object
-* 1.18 Create a point from coordinates
-* 1.19 Reference systems and projections 
+* 1.17 Create a point from coordinates
+* 1.18 Reference systems and projections 
+* 1.19 Visualize spatial data in QGIS
 * 1.20 Create a line from ordered points (trajectory)
-* 1.21 Calculate length of a trajectory
+* 1.21 Calculate distance between points and length of a trajectory
 * 1.22 Create a polygon from points (convex hull)
-* 1.23 Calculate the area of a polygon
-* 1.24 Visualize spatial data in QGIS
+* 1.23 Views
+
 
 ## 2. Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano & Johannes De Groeve, 10 h)
 * 2.1 Introduction to the goals and the datasets

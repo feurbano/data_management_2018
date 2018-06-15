@@ -16,14 +16,13 @@
 * [1.14  INSERT, UPDATE, DELETE](#c_1.14)
 * [1.15  Temporal data (date, time, timezone), EXTRACT](#c_1.15)
 * [1.16  Spatial objects in PostGIS](#c_1.16)
-* [1.17  Visualize the coordinates of a spatial object](#c_1.17)
-* [1.18  Create a point from coordinates](#c_1.18)
-* [1.19  Reference systems and projections](#c_1.19)
+* [1.17  Create a point from coordinates](#c_1.17)
+* [1.18  Reference systems and projections](#c_1.18)
+* [1.19  Visualize spatial data in QGIS](#c_1.19)
 * [1.20  Create a line from ordered points (trajectory)](#c_1.2)
-* [1.21  Calculate length of a trajectory](#c_1.21)
+* [1.21  Calculate distance between points and length of a trajectory](#c_1.21)
 * [1.22  Create a polygon from points (convex hull)](#c_1.22)
-* [1.23  Calculate the area of a polygon](#c_1.23)
-* [1.24  Visualize spatial data in QGIS](#c_1.24)
+* [1.23  Views](#c_1.23)
 
 
 ## <a name="c_1.1"></a>1.1 Introduction to SQL
@@ -274,7 +273,7 @@ FROM
 LIMIT 100;
 ```
 
-##### Exercise
+##### EXERCISE
 * Visualize the first 10 records in the *main.gps_data_animals* table that belong to animal_id 1 and where the distance to road is > 3000 meters
 * Visualize the records in the *main.animals* table with a fields with "male" or "female" according to their sex
 * Visualize all the existing values for the column *pro_com* in the *main.gps_data_animals* table
@@ -322,7 +321,7 @@ WHERE
 nome_com like 'C____e';
 ```
 
-##### Exercise
+##### EXERCISE
 * Retrieve all the animals that have the letter 'a' in their name
 
 ## <a name="c_1.8"></a>1.8 GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)
@@ -357,7 +356,7 @@ GROUP BY
   gps_sensors_id;
 ```
 
-##### Exercise
+##### EXERCISE
 
 * Count how many records you have per animal with coordinates not null (table *main.gps_data_animals*) and the average altitude.
 
@@ -394,7 +393,7 @@ ORDER BY
   animals_id;
 ```
 
-##### Exercise
+##### EXERCISE
 
 * Count how many records you have per station_id (table *main.gps_data_animals*) considering animals 1 and 2.
 * Visualize all the animals that have more than 2500 records (table *main.gps_data_animals*) 
@@ -433,7 +432,7 @@ INNER JOIN
 ON (animals.animals_id = gps_data_animals.animals_id);
 ```
 
-##### Exercise
+##### EXERCISE
 * Retrieve the name of each animal with the timestamp of its first and last location
 
 ## <a name="c_1.11"></a>1.11 LEFT JOIN
@@ -455,7 +454,7 @@ ON
 
 In this case, also the age class code with no animals associated are reported.
 
-##### Exercise
+##### EXERCISE
 * Count how many animals are included in the table *main.animals* for each species listed in the table *lu_tables.lu_species* (report '0' instead of *NULL* if there are no animals for that species).
 
 ## <a name="c_1.12"></a>1.12 Subqueries used in FROM statement
@@ -630,369 +629,74 @@ SELECT
 
 Many more tools to manage time are described in the **[PostgreSQL documentation](https://www.postgresql.org/docs/devel/static/functions-datetime.html)**.
 
+##### EXERCISE
+* Calculate how many hours each animal has been monitored (difference between the first and last location)
+* Calculate the average number of hours between successive locations (average frequency)
+
 ## <a name="c_1.16"></a>1.16 Spatial objects in PostGIS
 
-Until some years ago, the spatial information produced by GPS sensors was managed and analyzed using dedicated software (GIS) in file-based data formats (e.g. shapefile). Nowadays, the most advanced approaches in data management consider the spatial component of objects (e.g. a moving animal) as one of its many attributes: thus, while understanding the spatial nature of your data is essential to proper analysis, from a software perspective spatial is (less and less) not special. Spatial databases are the technical tool needed to implement this perspective. They integrate spatial data types (vector and raster) together with standard data types that store the objects' other (non-spatial) associated attributes. Spatial data types can be manipulated by SQL through additional commands and functions for the spatial domain. This possibility essentially allows you to build a GIS using the existing capabilities of relational databases. Moreover, while dedicated GIS software is usually focused on analyses and data visualization, providing a rich set of spatial operations, few are optimized for managing large spatial data sets (in particular, vector data) and complex data structures. Spatial databases, in turn, allow both advanced management and spatial operations that can be efficiently undertaken on a large set of elements. This combination of features is becoming essential, as with animal movement data sets the challenge is now on the extraction of synthetic information from very large data sets rather than on the extrapolation of new information (e.g. kernel home ranges from VHF data) from limited data sets with complex algorithms. 
+Until some years ago, the spatial information produced by GPS sensors was managed and analyzed using dedicated software (GIS) in file-based data formats (e.g. shapefile). Nowadays, the most advanced approaches in data management consider the spatial component of objects (e.g. a set of locations, or even better, a moving animal) as one of its many attributes: thus, while understanding the spatial nature of your data is essential to proper analysis, from a software perspective spatial is (less and less) not special. Spatial databases are (at the moment) the best technical tool to implement this perspective in the ecology studies. They integrate spatial data types (vector and raster) together with standard data types that store the objects' other (non-spatial) associated attributes, with particular reference to time. Spatial data types can be manipulated by SQL through additional commands and functions for the spatial domain. This essentially allows you to build a GIS using the existing capabilities of relational databases. Moreover, while dedicated GIS software is usually focused on analyses and data visualization, providing a rich set of spatial operations, few are optimized for managing large spatial data sets (in particular, vector data) and complex data structures. Spatial databases, in turn, allow both advanced management and spatial operations that can be efficiently undertaken on a large set of elements. This combination of features is becoming essential, as with animal movement data sets the challenge is now on the extraction of synthetic information from very large data sets rather than on the extrapolation of new information (e.g. kernel home ranges from VHF data) from limited data sets with complex algorithms.  
+There has also been an effort to [standardize](http://www.opengeospatial.org/) many aspects of spatial systems, which made data exchange between different platforms somewhat more comfortable and spatial database the option of choice for data management, leaving data visualization to more specific software tools. In fact, PostgreSQL/PostGIS offers no tool for spatial data visualization, but this can be done by a number of client applications, in particular GIS desktop software like ESRI Arc* or QGIS. 
 
---------------
+An ordinary database has strings, numbers, and dates. A spatial database adds additional (spatial) types for representing geographic features. These spatial data types abstract and encapsulate spatial structures such as boundary and dimension. In many respects, spatial data types (vector) can be understood simply as shapes: typically points, curves, surfaces and collections of them, in 2 or 3 dimensions. **[Raster Data](http://postgis.net/docs/manual-dev/RT_reference.html)** are discussed in a **[dedicated lesson](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.13_raster.md)**.
 
+For manipulating data during a query, an ordinary database provides functions such as concatenating strings, performing hash operations on strings, doing mathematics on numbers, and extracting information from dates. A spatial database provides a complete set of functions for analyzing geometric components, determining spatial relationships, and manipulating geometries. These spatial functions serve as the building block for any spatial project. The majority of all spatial functions can be grouped into one of the following five categories:
 
-This lesson will focus on introducing spatial data types, which will
-enable you to accomplish richer analysis of wildlife tracking data. By
-the end of the lesson you will become familiar with geometry columns,
-and make the database compute answers to spatial questions. 
+*  Conversion: Functions that convert between geometries and external data formats.
+*  Management: Functions that manage information about spatial tables and PostGIS administration.
+*  Retrieval: Functions that retrieve properties and measurements of a Geometry.
+*  Comparison: Functions that compare two geometries with respect to their spatial relation.
+*  Generation: Functions that generate new geometries from others.
 
-An ordinary database has strings, numbers, and dates. A spatial
-database adds additional (spatial) types for representing geographic
-features.  These spatial data types abstract and encapsulate spatial
-structures such as boundary and dimension. In many respects, spatial
-data types can be understood simply as shapes: typically points,
-curves, surfaces and collections of them.
-Such data were traditionally manipulated outside of databases using
-specialized tools (GIS software). In the last 15
-years or so, spurred by the wide usage of GPS systems, a few
-implementations of GIS tools for RBMS have emerged. There has also
-been an effort to [standardize](http://www.opengeospatial.org/) many
-aspects of spatial systems, which made data exchange between different
-platforms somewhat more comfortable.
+The list of possible functions is very large, but a common set of functions is defined by the **[OGC SFSQL](http://www.opengeospatial.org/standards/sfs)**.
 
-> spatial is not special
+In the Open Source world (and in the world in general...), one of the richest implementations of the spatial SQL standards is provided by the **[PostGIS](http://postgis.net/)** extension for PostgreSQL - and that was one strong motivation for choosing this particular RDBMS for dealing with tracking data.
 
-For manipulating data during a query, an ordinary database provides
-functions such as concatenating strings, performing hash operations on
-strings, doing mathematics on numbers, and extracting information from
-dates. A spatial database provides a complete set of functions for
-analyzing geometric components, determining spatial relationships, and
-manipulating geometries. These spatial functions serve as the building
-block for any spatial project.
+As we have seen before, RDBMS allow for storing and searching large amounts of data: to optimize access times, they make use of indexes which are often in the form of **[B-trees](http://en.wikipedia.org/wiki/B-tree)**. Spatial data require a different kind of indexes for efficient searching: spatial indexes are generally computed around the concept of *bounding box*. A bounding box is the smallest rectangle - parallel to the coordinate axes - capable of containing a given feature. Bounding boxes are used because answering the question "is A inside B?"  is very computationally intensive for polygons but very fast in the case of rectangles. Even the most complex polygons and linestrings can be represented by a simple bounding box.
 
-The majority of all spatial functions can be grouped into one of the
-following five categories:
+Indexes have to perform quickly in order to be useful. So instead of providing exact results, spatial indexes provide approximate results very fast. The question "what lines are inside this polygon?"  will be instead interpreted by a spatial index as "what lines have bounding boxes that are contained inside this polygon’s bounding box?". Once the potential results are limited by the use of the index, more computation intense process (but now on few options!) are performed to find the exact answer.
 
--   Conversion: Functions that convert between geometries and external
-    data formats.
--   Management: Functions that manage information about spatial tables
-    and PostGIS administration.
--   Retrieval: Functions that retrieve properties and measurements of
-    a Geometry.
--   Comparison: Functions that compare two geometries with respect to
-    their spatial relation.
--   Generation: Functions that generate new geometries from others.
+## <a name="c_1.17"></a>1.17 Create a point from coordinates
 
-The list of possible functions is very large, but a common set of
-functions is defined by the
-[OGC SFSQL](http://workshops.boundlessgeo.com/postgis-intro/glossary.html#term-sfsql).
-
-In the Open Source world, one of the richest implementations of the
-spatial SQL standards is provided by the
-[PostGIS](http://postgis.net/) extension for PostgreSQL - and that was
-one strong motivation for choosing this particular RDBMS for analyzing
-tracking data.
-
-As we have seen before, RDBMS allow for storing and searching large
-amounts of data: to optimize access times, they make use of indexes
-which are often in the form of
-[B-trees](http://en.wikipedia.org/wiki/B-tree). Spatial data require a
-different kind of indexes for efficient searching: spatial indexes are
-generally computed around the concept of *bounding box*: A bounding
-box is the smallest rectangle - parallel to the coordinate axes -
-capable of containing a given feature.
-
-Bounding boxes are used because answering the question “is A inside
-B?”  is very computationally intensive for polygons but very fast in
-the case of rectangles. Even the most complex polygons and linestrings
-can be represented by a simple bounding box.
-
-Indexes have to perform quickly in order to be useful. So instead of
-providing exact results, as B-trees do, spatial indexes provide
-approximate results. The question “what lines are inside this
-polygon?”  will be instead interpreted by a spatial index as “what
-lines have bounding boxes that are contained inside this polygon’s
-bounding box?”
-
-> raster
-
-------------
-
-> to be redistributed
-
-------------
-
-We have already enabled the spatial extensions for `demo`. The command
-to install PostGIS inside a database is:
-
-```sql
-CREATE EXTENSION postgis;
-```
-
-To check that everything is in order, we can call our first PostGIS
-function, `postgis_full_version`. On the server, we obtain the
-following answer:
+If you visualize how the coordinates of a spatial objects are stored in the database, you see that the database representation is not meant for being readable:
 
 ``` sql
-SELECT postgis_full_version();
+SELECT geom FROM main.gps_data_animals WHERE geom IS NOT NULL limit 5;
 ```
 
-So far, so good. Now, we build a new `geometries` table with a column
-of type (surprise, surprise!) `geometry`, and then put some data in
-it:
-
-```sql 
---don't run
-CREATE TABLE geometries (name varchar, geom geometry);
-INSERT INTO geometries VALUES
-  ('Point', 'POINT(0 0)'),
-  ('Linestring', 'LINESTRING(0 0, 1 1, 2 1, 2 2)'),
-  ('Polygon', 'POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'),
-  ('PolygonWithHole', 'POLYGON((0 0, 10 0, 10 10, 0 10, 0 0),(1 1, 1 2, 2 2, 2 1, 1 1))'),
-  ('Collection', 'GEOMETRYCOLLECTION(POINT(2 0),POLYGON((0 0, 1 0, 1 1, 0 1, 0 0)))');
-```
-
-Note that we are inserting a string value into column `geom`: the
-format is called
-[Well-known text](https://en.wikipedia.org/wiki/Well-known_text), WKT
-for short, and is also standardized.
-
-The internal database representation is not meant for being readable:
+The geometry object is just a sequence of coordinates. To view a human-readable format you can use the function `ST_ASTEXT` or `ST_ASEWKT`:
 
 ``` sql
-SELECT geom FROM geometries WHERE name = 'Point';
+SELECT ST_ASTEXT(geom), ST_ASEWKT(geom) FROM main.gps_data_animals WHERE geom IS NOT NULL limit 5;
 ```
 
-
-
-Among the many functions provided by PostGIS, you find one for
-converting from the internal representation back to WKT:
-
-```sql
-SELECT name, ST_AsText(geom) FROM geometries;
-```
-
-```
-      name       |                           st_astext                           
------------------+---------------------------------------------------------------
- Point           | POINT(0 0)
- Linestring      | LINESTRING(0 0,1 1,2 1,2 2)
- Polygon         | POLYGON((0 0,1 0,1 1,0 1,0 0))
- PolygonWithHole | POLYGON((0 0,10 0,10 10,0 10,0 0),(1 1,1 2,2 2,2 1,1 1))
- Collection      | GEOMETRYCOLLECTION(POINT(2 0),POLYGON((0 0,1 0,1 1,0 1,0 0)))
-(5 rows)
-```
-
-Geometric data can also be computed directly from coordinates, as in:
+A point geometry can be created directly from pair of coordinates with `ST_MakePoint`:
 
 ```sql
 SELECT ST_MakePoint(11.001,46.001) AS point;
 ```
 
-
-The textual representation is easier to recognize, of course:
+Here you create the point object and then visualize it in a textual representation:
 
 ```sql
 SELECT ST_AsText(ST_MakePoint(11.001,46.001)) AS point;
 ```
 
-In conformance with the standard, PostGIS offers a way to track and
-report on the geometry types available in a given database:
+In a similar way, you can create a 3D object:
+
+```sql
+SELECT ST_AsText(ST_MakePoint(11.001,46.001, 100)) AS point;
+```
+
+There are many available spatial functions available in PostGIS: look them up in the **[PostGIS reference documentation](http://postgis.net/docs/manual-dev/reference.html)** to get a grasp of what kind of tools PostGIS will offer you.
+
+In conformance with the standard, PostGIS offers a way to track and report on the geometry types available in a given database:
 
 ```sql
 SELECT * FROM geometry_columns;
 ```
 
-
-The previous query informs us that inside our `demo` there are 16
-tables with a geometry column, and that each of these columns is named
-`geom` and contains 2-dimensional data. Most of them, unlike the one
-we have just created, only accept a specific data type. Furthermore,
-they also carry information about the reference coordinate system in
-use, via the [SRID](https://en.wikipedia.org/wiki/SRID) parameter.
-
-The number `4326` refers to
-[EPSG:4326](http://spatialreference.org/ref/epsg/4326/), which is
-European Petroleum Survey Group identifier for WGS84:
-
-```sql
-GEOGCS["WGS 84",
-    DATUM["WGS_1984",
-        SPHEROID["WGS 84",6378137,298.257223563,
-            AUTHORITY["EPSG","7030"]],
-        AUTHORITY["EPSG","6326"]],
-    PRIMEM["Greenwich",0,
-        AUTHORITY["EPSG","8901"]],
-    UNIT["degree",0.01745329251994328,
-        AUTHORITY["EPSG","9122"]],
-    AUTHORITY["EPSG","4326"]]
-```
-
-In the case of `demo` data, we are not storing planar Euclidean
-coordinates, but use latitude and longitude to identify a point on the
-ellipsoid expressed by the geodetic datum WGS\_1984 - the one used
-globally by GPS systems.
-
-Our test table `geometries` actually does not specify an SRID, but we
-can easily fix that:
-
-```sql
-SELECT UpdateGeometrySRID('geometries','geom',4326);
-```
-
-```
-             updategeometrysrid              
----------------------------------------------
- public.geometries.geom SRID changed to 4326
-(1 row)
-```
-
-Let's query the contents of our `geometries` table using PostGIS some
-functions intended for metadata retrieval:
-
-```sql
-SELECT name, ST_GeometryType(geom), ST_NDims(geom), ST_SRID(geom)
-FROM geometries;
-```
-
-```
-      name       |    st_geometrytype    | st_ndims | st_srid 
------------------+-----------------------+----------+---------
- Point           | ST_Point              |        2 |    4326
- Linestring      | ST_LineString         |        2 |    4326
- Polygon         | ST_Polygon            |        2 |    4326
- PolygonWithHole | ST_Polygon            |        2 |    4326
- Collection      | ST_GeometryCollection |        2 |    4326
-(5 rows)
-```
-
-When using real world spatial data obtained from various sources, you
-will likely encounter different coordinate systems. One of the tasks
-that you will need to accomplish will be to re-project the data into a
-common SRID, in order to be able to do any useful work.
-
-Taken together, a coordinate and an SRID define a location on the
-globe.  Without an SRID, a coordinate is just an abstract notion. A
-“Cartesian” coordinate plane is defined as a “flat” coordinate system
-placed on the surface of Earth. Because PostGIS functions work on such
-a plane, comparison operations require that both geometries be
-represented in the same SRID.
-
-If you feed in geometries with differing SRIDs you will just get an
-error:
-
-```sql
-SELECT ST_Equals(
-        ST_GeomFromText('POINT(0 0)', 4326),
-        ST_GeomFromText('POINT(0 0)', 26918)
-);
-```
-
-```
-ERROR:  Operation on mixed SRID geometries
-CONTEXT:  SQL function "st_equals" statement 1
-```
-
-PostGIS has a table enumerating all the projections it knows about,
-that you can use to lookup the correct number:
-
-```sql
-SELECT * FROM spatial_ref_sys;
-```
-
-Using the correct SRID, you can then reproject data with
-`ST_Transform(geometry, srid)`. Let's transform one of our geometries
-to UTM32 WGS84 (SRID 32632):
-
-```sql
-SELECT
-    name,
-    ST_AsText(geom) AS wgs84,
-    ST_AsText(ST_Transform(geom,32632)) AS utm32
-FROM
-    geometries
-WHERE
-    name = 'Point';
-```
-
-The above example is a bit contrived, but you get the point.
-
-Our spatial extension is intended for data analysis, thus it also
-sports many function for computing things out of a geometry:
-
-``` sql
-SELECT name, ST_AsText(geom), ST_NPoints(geom), ST_Length(geom), ST_Perimeter(geom), ST_Area(geom)
-FROM geometries;
-```
-
-
-Other functions can be used to test of compute relations between
-geometries, like `ST_Equals` we have seen before. Probably the most
-used one will be `ST_Distance`:
-
-```sql
- SELECT 
-  ST_Distance(
-     ST_SetSRID(ST_MakePoint(-80.238,26.084), 4326),
-     ST_SetSRID(ST_MakePoint(-82.355,29.644), 4326)
-  ) AS distance;
-```
-
-```
-      distance      
---------------------
- 4.1418943733514
-(1 row)
-```
-
-As you can see, the result is given in the original unit, decimal
-degrees. If you want to compute the distance in kilometers, you could
-do it in Euclidean space, by projecting both point to the correct
-coordinate system:
-
-```sql
---Transform from WGS 1984 to UTM Zone 17N (NAD 83)
-SELECT
- ST_Distance(
-   ST_Transform(ST_SetSRID(ST_MakePoint(-80.238,26.084), 4326),26917),
-   ST_Transform(ST_SetSRID(ST_MakePoint(-82.355,29.644), 4326),26917)
-)/1000 AS distance;
-```
-
-```
-     distance     
-------------------
- 446.030122288446
-(1 row)
-```
-
-PostGIS can be more accurate than that, though: at the cost of some
-more complex calculations, you can ask it to compute the actual
-distance on the WGS84 spheroid surface:
-
-```sql
---No transformation, calculated distance on the WGS 1984 spheroid
-SELECT
- ST_Distance(
-   ST_SetSRID(ST_MakePoint(-80.238,26.084), 4326),
-   ST_SetSRID(ST_MakePoint(-82.355,29.644), 4326),
-   true
-)/1000 AS distance;
-```
-
-```
-    distance    
-----------------
- 446.18470782638
-(1 row)
-```
-
-The available functions are many, many more: look them up in the
-[reference](http://postgis.net/docs/manual-2.0/reference.html) to get
-a grasp of what kind of tools PostGIS will offer you.
-
-## <a name="c_1.17"></a>1.17 Visualize the coordinates of a spatial object
-PostgreSQL/PostGIS offers no tool for spatial data visualization, but this can be done by a number of client applications, in particular GIS desktop software like **[ESRI ArcGIS 10.x](http://www.esri.com/software/arcgis)** or **[QGIS](http://www.qgis.org/)**. QGIS is a powerful and complete open source software. It offers all the functions needed to deal with spatial data. QGIS is the suggested GIS interface because it has many tools specifically for managing and visualizing PostGIS data. Especially remarkable is the tool *DB Manager*. Now you can explore the GPS positions data set in QGIS.
-
-You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least at the time of writing this text) your spatial data. Data can be accessed using “Query layers”. A query layer is a layer or stand-alone table that is defined by a SQL query. Query layers allow both spatial and non-spatial information stored in a (spatial) DBMS to be integrated into GIS projects within ArcMap. When working in ArcMap, you create query layers by defining a SQL query. The query is then run against the tables and views in a database, and the result set is added to ArcMap. Query layers behave like any other feature layer or stand-alone table, so they can be used to display data, used as input into a geoprocessing tool, or accessed using developer APIs. The query is executed every time the layer is displayed or used in ArcMap. This allows the latest information to be visible without making a copy or snapshot of the data and is especially useful when working with dynamic information that is frequently changing.
-
-> add info on connection from material eurodeer
+The previous query informs us that inside our database there are a number of tables with a geometry column, and that each of these columns is named `geom` and contains 2-dimensional data and they only accept a specific data type. Furthermore, they also carry information about the reference coordinate system in use, via the **[SRID](https://en.wikipedia.org/wiki/SRID)** parameter.
 
 ## <a name="c_1.18"></a>1.18 Reference systems and projections 
 
@@ -1017,6 +721,15 @@ The reference system of a spatial objects can be set as follows:
 ```
 SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
 ```
+When using real world spatial data obtained from various sources, you will likely encounter different coordinate systems. One of the tasks that you will need to accomplish will be to re-project the data into a common SRID, in order to be able to do any useful work. 
+
+If you feed in geometries with differing SRIDs you will just get an error:
+```sql
+SELECT ST_Equals(
+        ST_GeomFromText('POINT(0 0)', 4326),
+        ST_GeomFromText('POINT(0 0)', 32632)
+);
+```
 
 Once the SRID code is set you can transform it into another reference system:
 ```
@@ -1032,9 +745,218 @@ Note that when performing spatial operations using two data sources with differe
 **Take home message:** 
 Coordinates only do not identify a position on earth and the same position has different values according to the reference system.
 
-## <a name="c_1.19"></a>1.19 Create a point from coordinates
+In our database, we are not storing planar Euclidean coordinates, but use latitude and longitude to identify a point on the ellipsoid expressed by the geodetic datum WGS\_1984 - the one used globally by GPS systems.
+
+##### EXERCISE
+* Visualize the coordinates of your points in both GWS84 and UTM32 (SRID 32632)
+
+## <a name="c_1.19"></a>1.19 Visualize spatial data in QGIS
+
+PostgreSQL/PostGIS offers no tool for spatial data visualization, but this can be done by a number of client applications, in particular GIS desktop software like **[ESRI ArcGIS 10.x](http://www.esri.com/software/arcgis)** or **[QGIS](http://www.qgis.org/)**. QGIS is a powerful and complete open source software. It offers all the functions needed to deal with spatial data. QGIS is the suggested GIS interface because it has many tools specifically for managing and visualizing PostGIS data. 
+
+[QGIS](www.qgis.org) is a desktop GIS that is very well integrated with PostgreSQL and PostGIS and offers a large set of tools to deal with spatial data in the database. Connecting to the database is pretty simple and the process is well documented, for example [here](http://docs.qgis.org/2.18/en/docs/training_manual/databases/index.html). Data can be accessed in three steps: create a connection to the db. Open the connection. Get the data.  
+ 
+The first time you connect with the database, you must create the connection using the **Add PostGIS Layer** icon (see screenshot below) and insert the connection parameters (the example comes from the **[EURODEER](http://www.eurodeer.org/)** project).
+
+![](images/qgis_connection.png)
+
+Once the connection is created, you can use the **DB Manager** interface (see below) where you can explore, preview, visualize in the main canvas and also export spatial data (both vector and raster).
+
+![](images/qgis_export.png)
+
+An interesting feature in QGIS is the possibility to visualize EURODEER data on top of one of the main global spatial layers like Google map or Bing map.
+
+You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least at the time of writing this text) your spatial data. Data can be accessed using “Query layers”. A query layer is a layer or stand-alone table that is defined by a SQL query. Query layers allow both spatial and non-spatial information stored in a (spatial) DBMS to be integrated into GIS projects within ArcMap. When working in ArcMap, you create query layers by defining a SQL query. The query is then run against the tables and views in a database, and the result set is added to ArcMap. Query layers behave like any other feature layer or stand-alone table, so they can be used to display data, used as input into a geoprocessing tool, or accessed using developer APIs. The query is executed every time the layer is displayed or used in ArcMap. This allows the latest information to be visible without making a copy or snapshot of the data and is especially useful when working with dynamic information that is frequently changing.
+
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
-## <a name="c_1.21"></a>1.21 Calculate length of a trajectory
+While locations are recorded (and stored in the database) as a set of points, they can be used to represent animal movement in other ways. The most common is the trajectory, i.e.  the path that the animal in motion follows through space as a function of time. GPS coordinates are sampling of this movement. In the database you can easily create a derived object, a line, that represent the trajectory. You can generate this new object grouping all the locations that are part of the trajectory. It is important to order locations by their acquisition time to have the real trajectory of the animal.  
+
+The SQL is therefore a `GROUP BY` query with an `ORDER BY` condition used with the agregation function `ST_MakeLine`, that generates a line. First you have to select and order the location, and then group them
+
+```sql
+SELECT 
+  animals_id, 
+  ST_MakeLine(geom)::geometry(LineString,4326) AS geom 
+FROM 
+  (SELECT animals_id, geom, acquisition_time 
+  FROM main.gps_data_animals 
+  WHERE gps_validity_code = 1 
+  ORDER BY 
+  animals_id, acquisition_time) AS sel_subquery 
+GROUP BY 
+  animals_id;
+```
+
+From PostGIS 9+, you can use a simplified syntax:
+
+```sql
+SELECT 
+  animals_id, 
+  ST_MakeLine(geom ORDER BY animals_id, acquisition_time) AS geom
+FROM 
+  main.gps_data_animals 
+GROUP BY 
+  animals_id;
+```
+
+As you can see, the calculation of a trajectory is very fast and you do not need to create a separate table to permanently store it (with related problems of synchronization of the points table and trajectory tables when new locations are added) but you can run a query to generate it every time you need the trajectories. You will see how this process can be simplified with the use of `VIEWS`.
+
+##### EXERCISE
+* Create the trajectory of animal 1 in May
+
+## <a name="c_1.21"></a>1.21 Calculate distance between points and length of a trajectory
+
+Now, you can compute the distance between two points. You can try with geographic coordinates as geometry data type:
+
+```sql
+SELECT
+  ST_Distance(
+    ST_SetSRID(ST_MakePoint(11.001,46.001), 4326),
+    ST_SetSRID(ST_MakePoint(11.03,46.02), 4326)) AS distance;
+```	
+
+As you can see, the result is given in the original unit (decimal degrees) because the geometry data type, which is the standard setting unless you explicitly specify the geography data type, applies the Euclidean distance to the points in geographic coordinates. In fact, distance between coordinates related to a spheroid should not be computed in Euclidean space (the minimum distance is not a straight line but a great circle arc). PostGIS offers many options to get the real distance in meters between two points in geographic coordinates. You can project the points and then compute the distance:
+
+```sql
+SELECT
+  ST_Distance(
+    ST_Transform(
+      ST_SetSRID(ST_MakePoint(11.001,46.001), 4326), 32632),
+    ST_Transform(
+      ST_SetSRID(ST_MakePoint(11.03,46.02), 4326),32632)) AS distance;
+```
+
+The result is now in meter.
+
+You can also use a specific function to compute distance on a sphere
+(`ST_Distance_Sphere`):
+
+```sql
+SELECT
+  ST_Distance_Sphere(
+    ST_SetSRID(ST_MakePoint(11.001,46.001), 4326),
+    ST_SetSRID(ST_MakePoint(11.03,46.02), 4326)) AS distance;
+```
+
+A sphere is just a rough approximation of the earth. A better approximation, at cost of more computational time, is given by the function `ST_Distance_Spheroid` where you have to specify the reference ellipsoid:
+
+```sql
+SELECT
+  ST_Distance_Spheroid(
+    ST_SetSRID(ST_MakePoint(11.001,46.001), 4326), 
+    ST_SetSRID(ST_MakePoint(11.03,46.02), 4326),
+    'SPHEROID["WGS 84",6378137,298.2257223563]') AS distance;
+```
+
+One more option is to *cast* (transform a data type into another data type using `::`) geometry as geography. 
+
+> The PostGIS **GEOGRAPHY** data type provides native support for spatial features represented in ‘geographic’ coordinates (latitude/longitude WGS84). Geographic coordinates are spherical coordinates expressed in angular units (degrees). Calculations (e.g. areas, distances, lengths, intersections) on the geometry data type features are performed using Cartesian mathematics and straight line vectors, while calculations on geography data type features are done on the sphere, using more complicated mathematics. For more accurate measurements, the calculations must take the actual spheroidal shape of the world into account, and the mathematics become very complicated. Due to this additional complexity, there are fewer (and slower) functions defined for the geography type than for the geometry type. Over time, as new algorithms are added, the capabilities of the geography type will expand. In any case, it is always possible to convert back and forth between geometry and geography types.
+
+Now, you can compute distance and PostGIS will execute this operation taking into account the nature of the reference system:
+
+```sql
+SELECT
+  ST_Distance(
+    ST_SetSRID(ST_MakePoint(11.001,46.001), 4326)::geography,
+    ST_SetSRID(ST_MakePoint(11.03,46.02), 4326)::geography) AS distance;
+```
+
+You can compare the results of the previous queries to see the different outputs. They are all different as a result of the different methods (and associated approximation) used to calculate them. 
+Another useful feature of PostGIS is the support of 3D spatial objects, which might be relevant, for example, for avian or marine species, or terrestrial species that move in an environment with large altitudinal variations. Here is an example that computes distances in a 2D space using `ST_Distance`e and in a 3D space using `ST_3DDistance`, where the vertical displacement is also considered:
+
+```sql
+SELECT
+  ST_Distance(
+    ST_Transform(
+      ST_SetSRID(ST_MakePoint(11.001,46.001), 4326), 32632),
+    ST_Transform(
+      ST_SetSRID(ST_MakePoint(11.03,46.02), 4326),32632)) AS distance_2D,
+  ST_3DDistance(
+    ST_Transform(
+      ST_SetSRID(ST_MakePoint(11.001,46.001, 0), 4326), 32632),
+    ST_Transform(
+  ST_SetSRID(ST_MakePoint(11.03,46.02, 1000), 4326),32632)) AS distance_3D;
+```
+
+If you want to calculate the length of a trajectory, you can use `ST_length`, with the same consideration about projection and precision:
+
+
+```sql
+SELECT 
+  animals_id, 
+  ST_length(ST_MakeLine(geom ORDER BY animals_id, acquisition_time)::geography) AS length_geography, 
+  ST_length(st_transform(ST_MakeLine(geom ORDER BY animals_id, acquisition_time),32632)) AS length_reproject
+FROM 
+  main.gps_data_animals 
+GROUP BY 
+  animals_id;
+```
+
+##### EXERCISE
+* Calculate the average distance between locations for each animal
+* Calculate the total length of the roads stored in the database
+
 ## <a name="c_1.22"></a>1.22 Create a polygon from points (convex hull)
-## <a name="c_1.23"></a>1.23 Calculate the area of a polygon
-## <a name="c_1.24"></a>1.24 Visualize spatial data in QGIS
+
+An additional way to spatially summarise the GPS data set is by using convex hull polygons (or minimum convex polygons), which in many cases can be considered as a rough description of the animal home range. Although `ST_ConvexHull` it is not an aggregate function (it represents the minimum convex geometry that encloses all geometries within the set), you can use it in conjunction with `ST_Collect` to get the convex hull of a set of points. :
+
+```sql
+SELECT 
+  animals_id,
+  (ST_ConvexHull(ST_Collect(geom)))::geometry(Polygon,4326) AS geom
+FROM 
+  main.gps_data_animals 
+WHERE 
+  geom IS NOT NULL 
+GROUP BY 
+  animals_id 
+ORDER BY 
+  animals_id;
+```
+
+You can calculate the area with the function `ST_Area`:
+
+```sql
+SELECT 
+  animals_id,
+  ST_AREA((ST_ConvexHull(ST_Collect(geom)))::geometry(Polygon,4326)::GEOGRAPHY) AS geom
+FROM 
+  main.gps_data_animals 
+WHERE 
+  geom IS NOT NULL 
+GROUP BY 
+  animals_id 
+ORDER BY 
+  animals_id;
+```
+
+##### EXERCISE
+* Calculate the centroid of locations for each animal (hint: look for the PostGIS function to calculate the coordinates of the centroid)
+* Create the convex hull polygon for all the locations of the dataset 
+* Calculate the area of the monthly minimum convex hull for animal 1 and see if the size is related to the season of the year
+
+## <a name="c_1.23"></a>1.23 Views
+A **[VIEWS](https://www.postgresql.org/docs/devel/static/sql-createview.html)** are queries permanently stored in the database. For users (and client applications), they work like normal tables, but their data are calculated at query time and not physically stored. Changing the data in a table alters the data shown in subsequent invocations of related views. Views are useful because they can represent a subset of the data contained in a table; can join and simplify multiple tables into a single virtual table; take very little space to store, as the database contains only the deﬁnition of a view (i.e. the SQL query), not a copy of all the data it presents; and provide extra security, limiting the degree of exposure of tables to the outer world. On the other hand, a view might take some time to return its data content. For complex computations that are often used, it is more convenient to store the information in a permanent table.
+
+The syntax to create a view is very simple, you have to add `CREATE VIEW ... AS` before your `SELECT` statement:
+
+```sql
+CREATE VIEW schema.nameview AS
+SELECT [...]
+```
+
+In the database you have three queries already create in the schema analysis:
+
+* analysis.view_convex_hulls (GPS locations - Minimum convex polygons)
+* analysis.view_gps_locations (GPS valid locations)
+* analysis.view_trajectories (GPS locations – Trajectories)
+
+In this way, at any moment users can visualize an updated version of these three data representations with no additional work for data update and maintenance. The views are queries as normal tables, for example:
+
+```sql
+SELECT * FROM analysis.view_trajectories;
+```
+
+##### EXERCISE
+* Calculate the length of trajectories for each animal using analysis.view_trajectories
+* Visualize the views of points, trajectory and convex hull in QGIS for (only) animal 1, and add Google satellite as background

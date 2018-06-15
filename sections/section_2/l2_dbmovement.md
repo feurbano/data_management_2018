@@ -711,6 +711,12 @@ The first step to do in order to spatially enable your database is to load the P
 CREATE EXTENSION postgis;
 ```
 
+To check that everything is in order, we can call our first PostGIS function, `postgis_full_version`.
+
+``` sql
+SELECT postgis_full_version();
+```
+
 Now you can use and exploit all the features offered by PostGIS in your database. The vector objects (points, lines, and polygons) are stored in a specific field of your tables as spatial data types. This field contains the structured list of vertexes, i.e. coordinates of the spatial object, and also includes its reference system. The PostGIS spatial (vectors) data types are not topological, although, if needed, PostGIS has a dedicated
 **[topological extension](http://postgis.refractions.net/docs/Topology.html)**.
 
@@ -1413,13 +1419,15 @@ If you have tables that change frequently and others that remain unchanged for l
 ## <a name="c_2.12"></a>2.12 Recap exercises
 
 1.  Calculate number of locations per animal per month
-2.  Calculate average distance per animal per month
+2.  Calculate average distance between locations per animal per month
 3.  Find animals at same place (distance between locations < 100 m) at the same time (temporal difference between locations < 5 h)
 4.  Find how many locations falls in the home range (convex hulls) of another animal
 5.  Find the GPS position stored in the database that is closest to the city of Trento
 6.  Is the average distance covered between 8 p.m. and 8 a.m smaller or bigger than the average distance covered between 8 a.m. and 8 p.m?
 7.  Is the average distance covered in winter smaller or bigger than in summer?
-8.  Design a general schema of a possible database extension (i.e. table(s) and their links) to include information on capture and particularly on:
+8.  Find the animal with the largest monthly convex hull polygon
+9.  Calculate the main statistics of the altitudinal range for all animals in winter months
+10.  Design a general schema of a possible database extension (i.e. table(s) and their links) to include information on capture and particularly on:
     -   date and time of the capture (note that the same animal can be captured more than once)
     -   location of capture
     -   capture method
