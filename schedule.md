@@ -16,7 +16,7 @@
 <td>
 08.30-12.30: SQL and Spatial SQL (Urbano)<br>
 12.30-13.30: Lunch<br>
-13.30-14.00: The Ecological Context Built from Satellites (Delucchi)<br>
+13.30-14.00: The Ecological Context Built from Satellites (Rocchini)<br>
 14.00-18.00: Movement Ecology Data Management with PostgreSQL/PostGIS (Urbano)<br>
 18.00-18.30: Science Happy Hour: Flash talks from students, in presence of experts<br>
 </td> 

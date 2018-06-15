@@ -995,6 +995,43 @@ You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least 
 > add info on connection from material eurodeer
 
 ## <a name="c_1.18"></a>1.18 Reference systems and projections 
+
+The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the [(Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), the [Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some more interesting links to explore on map projections and map distortion. 
+
+* [Map distortion](http://www.gis.osu.edu/misc/map-projections/)
+* [Map characteristics](http://bl.ocks.org/syntagmatic/raw/ba569633d51ebec6ec6e/)
+* [Compare projections](https://map-projections.net/imglist.php)
+
+Coordinates alone do not allow to understand where on earth spatial objects (points, lines, polygons) are located. In addition a corresponding geographical reference system needs to be identified. A geographical reference system uses a datum, an ellipsoid, a projection and a reference zero X and Y axis, in order to assign coordinates to certain locations. Some commonly used geographical reference systems are the [World Geodetic System](http://spatialreference.org/ref/epsg/4326/) (WGS84, EPSG:4326), [the Projected coordinate system for Europe](http://spatialreference.org/ref/epsg/3035/) (ETRS89, EPSG:3035) and the [Universal Transverse Mercator coordinate system](https://gisgeography.com/utm-universal-transverse-mercator-projection/) (UTM).
+There are two types of geographical reference systems, global or spherical reference systems and projected reference systems often defined more locally (e.g., country, continental). A typical example of a global reference system is EPSG:4326, which uses as geodetic datum and ellipsoid WGS84 and as zero reference axes the prime meridian at Greenwich (longitude) and the equator (latitude). Since this is a spherical reference system the measurement unit is in degrees (e.g., [we are here](https://goo.gl/maps/7WyJ7bYBp892): longitude = 11°08'10.7"E, latitude = 46°11'30.5"N). An example of a projected reference system is the Universal Transverse Mercator (UTM) coordinate system. In UTM the earth is devided into a grid, where each grid cell is projected using a standard set of map projections with a central meridian for each six-degree wide UTM zone. In UTM the measurement unit is in meters. 
+
+All projections available in a postgresql spatial database can be called using:
+
+```
+SELECT * FROM spatial_ref_sys;
+```
+
+Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). 
+
+The reference system of a spatial objects can be set as follows:
+```
+SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
+```
+
+Once the SRID code is set you can transform it into another reference system:
+```
+SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632);
+```
+
+If you compare the units are clearly different (WGS84 = degrees; UTM = meters):
+```
+SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632) utm32; 
+```
+Note that when performing spatial operations using two data sources with different reference systems will not give any output. Thus, when performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
+
+**Take home message:** 
+Coordinates only do not identify a position on earth and the same position has different values according to the reference system.
+
 ## <a name="c_1.19"></a>1.19 Create a point from coordinates
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
 ## <a name="c_1.21"></a>1.21 Calculate length of a trajectory
