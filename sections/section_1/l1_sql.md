@@ -1011,7 +1011,7 @@ All projections available in a postgresql spatial database can be called using:
 SELECT * FROM spatial_ref_sys;
 ```
 
-Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). A very useful website is [spatial reference](http://spatialreference.org), including all geographical reference systems and how they are defined in different formats (e.g. proj4, json, wkt).  
+Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). A very useful website is [spatial reference](http://spatialreference.org), including all geographical reference systems, their SRID and how they are defined in different formats (e.g. proj4, json, wkt).  
 
 The reference system of a spatial object can be set as follows:
 ```
