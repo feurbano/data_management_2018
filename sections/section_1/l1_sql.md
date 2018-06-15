@@ -994,7 +994,10 @@ You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least 
 
 > add info on connection from material eurodeer
 
-## <a name="c_1.18"></a>1.18 Reference systems and projections 
+## <a name="c_1.19"></a>1.18 Create a point from coordinates
+
+
+## <a name="c_1.18"></a>1.19 Reference systems and projections 
 
 The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the [(Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), the [Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some more interesting links to explore on map projections and map distortion. 
 
@@ -1032,7 +1035,6 @@ Note that when performing spatial operations using two data sources with differe
 **Take home message:** 
 Coordinates only do not identify a position on earth and the same position has different values according to the reference system.
 
-## <a name="c_1.19"></a>1.19 Create a point from coordinates
 ## <a name="c_1.20"></a>1.20 Create a line from ordered points (trajectory)
 ## <a name="c_1.21"></a>1.21 Calculate length of a trajectory
 ## <a name="c_1.22"></a>1.22 Create a polygon from points (convex hull)
