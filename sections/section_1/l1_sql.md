@@ -1002,7 +1002,7 @@ The earth is approximately spheric whereas maps are two-dimensional. Projections
 * [Map characteristics](http://bl.ocks.org/syntagmatic/raw/ba569633d51ebec6ec6e/)
 * [Compare projections](https://map-projections.net/imglist.php)
 
-Coordinates alone do not allow to understand where on earth spatial objects (points, lines, polygons) are located. In addition a corresponding geographical reference system needs to be identified. A geographical reference system uses a datum, an ellipsoid, a projection and a reference zero X and Y axis, in order to assign coordinates to certain locations. Some commonly used geographical reference systems are the [World Geodetic System](http://spatialreference.org/ref/epsg/4326/) (WGS84, EPSG:4326), [the Projected coordinate system for Europe](http://spatialreference.org/ref/epsg/3035/) (ETRS89, EPSG:3035) and the [Universal Transverse Mercator coordinate system](https://gisgeography.com/utm-universal-transverse-mercator-projection/) (UTM).
+Coordinates alone do not allow to understand where on earth spatial objects (points, lines, polygons) are located. In addition a corresponding geographical reference system needs to be identified. A geographical reference system uses a datum, an ellipsoid, a projection and a reference zero X and Y axis, in order to assign coordinates to certain locations. Some commonly used geographical reference systems are the [World Geodetic System](http://spatialreference.org/ref/epsg/4326/) (WGS84, EPSG:4326), [the Projected coordinate system for Europe](http://spatialreference.org/ref/epsg/3035/) (ETRS89, EPSG:3035) and the [Universal Transverse Mercator coordinate system](https://gisgeography.com/utm-universal-transverse-mercator-projection/) (UTM). 
 There are two types of geographical reference systems, global or spherical reference systems and projected reference systems often defined more locally (e.g., country, continental). A typical example of a global reference system is EPSG:4326, which uses as geodetic datum and ellipsoid WGS84 and as zero reference axes the prime meridian at Greenwich (longitude) and the equator (latitude). Since this is a spherical reference system the measurement unit is in degrees (e.g., [we are here](https://goo.gl/maps/7WyJ7bYBp892): longitude = 11°08'10.7"E, latitude = 46°11'30.5"N). An example of a projected reference system is the Universal Transverse Mercator (UTM) coordinate system. In UTM the earth is devided into a grid, where each grid cell is projected using a standard set of map projections with a central meridian for each six-degree wide UTM zone. In UTM the measurement unit is in meters. 
 
 All projections available in a postgresql spatial database can be called using:
@@ -1011,19 +1011,19 @@ All projections available in a postgresql spatial database can be called using:
 SELECT * FROM spatial_ref_sys;
 ```
 
-Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). 
+Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). A very useful website is [spatial reference](http://spatialreference.org), including all geographical reference systems and how they are defined in different formats (e.g. proj4, json, wkt).  
 
-The reference system of a spatial objects can be set as follows:
+The reference system of a spatial object can be set as follows:
 ```
 SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
 ```
 
-Once the SRID code is set you can transform it into another reference system:
+Once the SRID code is set you can transform locations into another reference system:
 ```
 SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632);
 ```
 
-If you compare the units are clearly different (WGS84 = degrees; UTM = meters):
+If you compare, the units are clearly different (WGS84 = degrees; UTM = meters):
 ```
 SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632) utm32; 
 ```
@@ -1038,3 +1038,15 @@ Coordinates only do not identify a position on earth and the same position has d
 ## <a name="c_1.22"></a>1.22 Create a polygon from points (convex hull)
 ## <a name="c_1.23"></a>1.23 Calculate the area of a polygon
 ## <a name="c_1.24"></a>1.24 Visualize spatial data in QGIS
+
+[QGIS](www.qgis.org) is a desktop GIS that is very well integrated with PostgreSQL and PostGIS and offers a large set of tools to deal with spatial data in the database. Connecting to the database is pretty simple and the process is well documented, for example [here](http://docs.qgis.org/2.18/en/docs/training_manual/databases/index.html). Data can be accessed in three steps: create a connection to the db. Open the connection. Get the data.  
+ 
+The first time you connect with the database, you must create the connection using the **Add PostGIS Layer** icon (see screenshot below) and insert the connection parameters.
+
+![](images/qgis_connection.png)
+
+Once the connection is created, you can use the **DB Manager** interface (see below) where you can explore, preview, visualize in the main canvas and also export spatial data (both vector and raster).
+
+![](images/qgis_export.png)
+
+An interesting feature in QGIS is the possibility to visualize EURODEER data on topo of one of the main global spatial layers like Google map or Bing map.
