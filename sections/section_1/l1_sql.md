@@ -913,7 +913,6 @@ GROUP BY
 ORDER BY 
   animals_id;
 ```
-
 You can calculate the area with the function `ST_Area`:
 
 ```sql
