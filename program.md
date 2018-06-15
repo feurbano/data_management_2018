@@ -25,8 +25,8 @@
 * 1.15 Temporal data (date, time, timezone), EXTRACT
 * 1.16 Spatial objects in PostGIS
 * 1.17 Visualize the coordinates of a spatial object
-* 1.18 Reference systems and projections 
-* 1.19 Create a point from coordinates
+* 1.18 Create a point from coordinates
+* 1.19 Reference systems and projections 
 * 1.20 Create a line from ordered points (trajectory)
 * 1.21 Calculate length of a trajectory
 * 1.22 Create a polygon from points (convex hull)
