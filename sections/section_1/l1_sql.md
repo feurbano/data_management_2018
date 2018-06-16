@@ -24,7 +24,6 @@
 * [1.22  Create a polygon from points (convex hull)](#c_1.22)
 * [1.23  Views](#c_1.23)
 
-
 ## <a name="c_1.1"></a>1.1 Introduction to SQL
 The state-of-the-art technical tool for managing movement and population ecology data is the Spatial Relational DataBase Management Systems (*SRDBMS* for short). Using databases to manage data implies a considerable effort for those who are not already familiar with these tools, but this is necessary to be able to deal with large and/or complex data sets in a multi-user context where errors might be critical and data should be re-used for different projects. The time spent to learn databases will be largely paid back with the time saved for the management and processing of the data as compared with simpler data management approaches (e.g. spreadsheet). Other advanced data management systems exist (e.g. NoSQL database), but at the moment in most of the cases they are not the database technology of choice in ecology.
 
@@ -960,4 +959,4 @@ SELECT * FROM analysis.view_trajectories;
 
 ##### EXERCISE
 * Calculate the length of trajectories for each animal using analysis.view_trajectories
-* Visualize the views of points, trajectory and convex hull in QGIS for (only) animal 1, and add Google satellite as background
+* Visualize the views of points, trajectory and convex hull in QGIS for (only) animal 1, and add Goggle satellite as background
