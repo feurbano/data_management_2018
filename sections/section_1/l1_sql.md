@@ -40,7 +40,8 @@ Please note that in this lesson just some of the main SQL commands are discussed
 * [postgresqltutorial](http://www.postgresqltutorial.com/)
 * [w3resource](https://w3resource.com/PostgreSQL/tutorial.php)
 * [sqlbolt](https://sqlbolt.com/)
-* [webcheatsheet](http://webcheatsheet.com/sql/interactive_sql_tutorial/)
+* [webc
+* heatsheet](http://webcheatsheet.com/sql/interactive_sql_tutorial/)
 * [www.sql.org](www.sql.org)
 
 ## <a name="c_1.2"></a>1.2 Overview of the database used for the exercises
@@ -935,7 +936,7 @@ ORDER BY
 * Calculate the area of the monthly minimum convex hull for animal 1 and see if the size is related to the season of the year
 
 ## <a name="c_1.23"></a>1.23 Views
-A **[VIEWS](https://www.postgresql.org/docs/devel/static/sql-createview.html)** are queries permanently stored in the database. For users (and client applications), they work like normal tables, but their data are calculated at query time and not physically stored. Changing the data in a table alters the data shown in subsequent invocations of related views. Views are useful because they can represent a subset of the data contained in a table; can join and simplify multiple tables into a single virtual table; take very little space to store, as the database contains only the deﬁnition of a view (i.e. the SQL query), not a copy of all the data it presents; and provide extra security, limiting the degree of exposure of tables to the outer world. On the other hand, a view might take some time to return its data content. For complex computations that are often used, it is more convenient to store the information in a permanent table.
+**[VIEWS](https://www.postgresql.org/docs/devel/static/sql-createview.html)** are queries permanently stored in the database. For users (and client applications), they work like normal tables, but their data are calculated at query time and not physically stored. Changing the data in a table alters the data shown in subsequent invocations of related views. Views are useful because they can represent a subset of the data contained in a table; can join and simplify multiple tables into a single virtual table; take very little space to store, as the database contains only the deﬁnition of a view (i.e. the SQL query), not a copy of all the data it presents; and provide extra security, limiting the degree of exposure of tables to the outer world. On the other hand, a view might take some time to return its data content. For complex computations that are often used, it is more convenient to store the information in a permanent table.
 
 The syntax to create a view is very simple, you have to add `CREATE VIEW ... AS` before your `SELECT` statement:
 
