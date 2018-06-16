@@ -700,16 +700,16 @@ The previous query informs us that inside our database there are a number of tab
 
 ## <a name="c_1.18"></a>1.18 Reference systems and projections 
 
-The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the [(Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), the [Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. Here are some comparisons of the actual size in contrast to the Mercator projection size ([The True Size](https://thetruesize.com)). Here you can find some more interesting links to explore on map projections and map distortion. 
+The earth is approximately spheric whereas maps are two-dimensional. Projections are used to give such a two-dimensional representation of the earth. Many different projection systems exist, each using different mathematical formulas to estimate the earth on a flat surface. Some commonly used projections are the [(Transverse) Mercator projection](https://map-projections.net/compare.php?p1=mercator-84&p2=miller&w=0), the [Robinson projection](https://map-projections.net/compare.php?p1=robinson&p2=schjerning-1&w=0) and the [Lambert Conformal Conic](https://map-projections.net/compare.php?p1=lambert-conformal-conic&p2=mercator-84&w=0). Projections always give a certain distortion of the shape, size, distance and/or angle between different features on the earth's surface. For instance the Mercator projection, from which a variant (Spherical Normal equatorial Mercator projection) is used in google maps, shows large overestimation of the surface area towards the poles. At this website ([The True Size](https://thetruesize.com)) you can compare the size of a country at different latitudes using the Mercator projection. Here you can find some more interesting links to explore map projections and map distortion. 
 
 * [Map distortion](http://www.gis.osu.edu/misc/map-projections/)
 * [Map characteristics](http://bl.ocks.org/syntagmatic/raw/ba569633d51ebec6ec6e/)
 * [Compare projections](https://map-projections.net/imglist.php)
 
-Coordinates alone do not allow to understand where on earth spatial objects (points, lines, polygons) are located. In addition a corresponding geographical reference system needs to be identified. A geographical reference system uses a datum, an ellipsoid, a projection and a reference zero X and Y axis, in order to assign coordinates to certain locations. Some commonly used geographical reference systems are the [World Geodetic System](http://spatialreference.org/ref/epsg/4326/) (WGS84, EPSG:4326), [the Projected coordinate system for Europe](http://spatialreference.org/ref/epsg/3035/) (ETRS89, EPSG:3035) and the [Universal Transverse Mercator coordinate system](https://gisgeography.com/utm-universal-transverse-mercator-projection/) (UTM).
-There are two types of geographical reference systems, global or spherical reference systems and projected reference systems often defined more locally (e.g., country, continental). A typical example of a global reference system is EPSG:4326, which uses as geodetic datum and ellipsoid WGS84 and as zero reference axes the prime meridian at Greenwich (longitude) and the equator (latitude). Since this is a spherical reference system the measurement unit is in degrees (e.g., [we are here](https://goo.gl/maps/7WyJ7bYBp892): longitude = 11°08'10.7"E, latitude = 46°11'30.5"N). An example of a projected reference system is the Universal Transverse Mercator (UTM) coordinate system. In UTM the earth is devided into a grid, where each grid cell is projected using a standard set of map projections with a central meridian for each six-degree wide UTM zone. In UTM the measurement unit is in meters. 
+Coordinates alone do not allow to understand where on earth spatial objects (points, lines, polygons) are located. In addition a corresponding **geographical reference system** needs to be identified. A geographical reference system uses an ellipsoid and a datum including a reference zero X and Y axis, in order to assign coordinates to certain locations. Some commonly used geographical reference systems are the [World Geodetic System](http://spatialreference.org/ref/epsg/4326/) (WGS84, EPSG:4326), [the Projected coordinate system for Europe](http://spatialreference.org/ref/epsg/3035/) (ETRS89, EPSG:3035) and the [Universal Transverse Mercator coordinate system](https://gisgeography.com/utm-universal-transverse-mercator-projection/) (UTM).
+There are two types of geographical reference systems, **global or spherical reference systems** and **projected reference systems** often defined more locally (e.g., country, continental). A typical example of a global reference system is EPSG:4326, which uses as geodetic datum and ellipsoid WGS84 and as zero reference axes the prime meridian at Greenwich (longitude) and the equator (latitude). Since this is a spherical reference system the measurement unit is in degrees (e.g., [we are here](https://goo.gl/maps/7WyJ7bYBp892): longitude = 11°08'10.7"E, latitude = 46°11'30.5"N). An example of a projected reference system is the Universal Transverse Mercator (UTM) coordinate system. In UTM the earth is devided into a grid, where each grid cell is projected using a standard set of map projections with a central meridian for each six-degree wide UTM zone. In UTM the measurement unit is in meters. 
 
-All projections available in a postgresql spatial database can be called using:
+All spatial reference systems available in a postgresql-postgis spatial database can be called using:
 
 ```sql
 SELECT * FROM spatial_ref_sys;
@@ -717,10 +717,15 @@ SELECT * FROM spatial_ref_sys;
 
 Each reference system has a specific spatial reference identifier (SRID). For instance, the World Geodetic System (SRID = 4326), the Projected coordinate system for Europe (SRID = 3035), UTM for North-Italy (SRID = 32632). 
 
+```sql
+SELECT * FROM spatial_ref_sys WHERE srid in (4326, 3035, 32632);
+```
+
 The reference system of a spatial objects can be set as follows:
 ```sql
 SELECT ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326);
 ```
+
 When using real world spatial data obtained from various sources, you will likely encounter different coordinate systems. One of the tasks that you will need to accomplish will be to re-project the data into a common SRID, in order to be able to do any useful work. 
 
 If you feed in geometries with differing SRIDs you will just get an error:
@@ -736,15 +741,15 @@ Once the SRID code is set you can transform it into another reference system:
 SELECT ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632);
 ```
 
-If you compare the units are clearly different (WGS84 = degrees; UTM = meters):
+If you compare, the units are clearly different (WGS84 = degrees; UTM = meters):
 ```sql
-SELECT  ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326) wgs84, 
-	ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632) utm32; 
+SELECT  ST_AsText(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326)) wgs84, 
+	ST_AsText(ST_Transform(ST_SetSRID(ST_MakePoint(11.136293,46.191794),4326),32632)) utm32; 
 ```
-Note that when performing spatial operations using two data sources with different reference systems will not give any output. Thus, when performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
 
 **Take home message:** 
 Coordinates only do not identify a position on earth and the same position has different values according to the reference system.
+When performing spatial operations (such as intersection, union, distance between points from two layers) always make sure the coordinate reference systems are the same. 
 
 In our database, we are not storing planar Euclidean coordinates, but use latitude and longitude to identify a point on the ellipsoid expressed by the geodetic datum WGS\_1984 - the one used globally by GPS systems.
 
@@ -765,7 +770,7 @@ Once the connection is created, you can use the **DB Manager** interface (see be
 
 ![](images/qgis_export.png)
 
-An interesting feature in QGIS is the possibility to visualize your data on top of one of the main global spatial layers like Google map or Bing map using the openlayers plugin. The openlayers plugin is not yet implemented in the newest QGIS 3.0, but instead XYZ tiles can be used after running the following piece of [python code](https://raw.githubusercontent.com/klakar/QGIS_resources/master/collections/Geosupportsystem/python/qgis_basemaps.py) in the python console of QGIS (full credit is to [Klas Karlsson](https://twitter.com/klaskarlsson/status/972757121933733889).   
+An interesting feature in QGIS is the possibility to visualize your data on top of one of the main global spatial layers like Google map or Bing map using [QuickMapServices](http://nextgis.com/blog/quickmapservices/), or through XYZ tiles (enable maps by running the following [python code](https://raw.githubusercontent.com/klakar/QGIS_resources/master/collections/Geosupportsystem/python/qgis_basemaps.py) by [Klas Karlsson](https://twitter.com/klaskarlsson/status/972757121933733889) in the python console of QGIS.   
 
 You can also use ArcGIS ESRI 10.x to visualize (but not natively edit, at least at the time of writing this text) your spatial data. Data can be accessed using “Query layers”. A query layer is a layer or stand-alone table that is defined by a SQL query. Query layers allow both spatial and non-spatial information stored in a (spatial) DBMS to be integrated into GIS projects within ArcMap. When working in ArcMap, you create query layers by defining a SQL query. The query is then run against the tables and views in a database, and the result set is added to ArcMap. Query layers behave like any other feature layer or stand-alone table, so they can be used to display data, used as input into a geoprocessing tool, or accessed using developer APIs. The query is executed every time the layer is displayed or used in ArcMap. This allows the latest information to be visible without making a copy or snapshot of the data and is especially useful when working with dynamic information that is frequently changing.
 
