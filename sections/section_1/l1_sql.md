@@ -476,7 +476,7 @@ FROM
 ```
 
 ##### EXERCISE
-* Retrive the animal with the larger altitudina range
+* Retrive the animal with the larger altitudinal range
 
 
 ## <a name="c_1.13"></a>1.13 WINDOW functions
