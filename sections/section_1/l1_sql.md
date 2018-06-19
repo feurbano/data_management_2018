@@ -898,6 +898,25 @@ GROUP BY
   animals_id;
 ```
 
+In this example you calculate the speed between locations (with valid geometry):
+```sql
+SELECT 
+  animals_id, 
+  acquisition_time, 
+  st_distance (
+    geom::geography,
+    lag(geom::geography, 1)over(partition by animals_id order by acquisition_time)
+  )
+  /
+  ((extract(epoch from acquisition_time) 
+     - extract(epoch from lag(acquisition_time, 1) over (partition by animals_id order by      
+       acquisition_time)))/60/60)
+FROM 
+  main.gps_data_animals
+WHERE 
+  geom IS NOT NULL;
+```
+
 ##### EXERCISE
 * Calculate the average distance between locations for each animal
 * Calculate the total length of the roads stored in the database
