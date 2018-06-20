@@ -146,7 +146,7 @@ GitHub.
 
 Let's install all necessary packages right now:
 
-```{r}
+```r
 install.packages("adehabitatHS")
 install.packages("raster")
 install.packages("lubridate")
@@ -157,7 +157,7 @@ Finally, we install the packages `basr`, `hab` and `rpostgis` directly
 from GitHub, with the help of `devtools`; we also need to install the
 development version of `rpostgisLT`:
 
-```{r}
+```r
 library("devtools")
 install_github("basille/basr")
 install_github("basille/hab")
@@ -180,27 +180,27 @@ Let's build step by step a `ltraj` object using an example data set
 provided in the package (wild boar tracking data in southern
 France). We first load the package and the data:
 
-```{r}
+```r
 library("hab")
 data(puechabonsp)
 ```
 
 Then check what we have in this dataset:
 
-```{r}
+```r
 names(puechabonsp)
 ```
 
 We first extract the maps themselves, and plot them:
 
-```{r}
+```r
 (map <- puechabonsp$map)
 mimage(puechabonsp$map)
 ```
 
 We now extract the location dataset, and explore it a bit:
 
-```{r}
+```r
 locs <- puechabonsp$relocs
 summary(locs)
 head(locs)
@@ -212,7 +212,7 @@ The column for dates is not stored in a class that is recognized as
 such in R. We need to do it now, using the package `lubridate`:
 
 
-```{r}
+```r
 
 class(locs$Date)
 library("lubridate")
@@ -224,7 +224,7 @@ class(locs$Date)
 We can now store the data into a `ltraj` object, using the `as.ltraj`
 function, and explore the structure of this object:
 
-```{r}
+```r
 (tr1 <- as.ltraj(coordinates(locs), date = locs$Date, id = locs$Name))
 class(tr1)
 tr1[[1]]
@@ -233,14 +233,14 @@ str(tr1[[1]])
 
 This allows us to display each individual trajectory:
 
-```{r}
+```r
 plot(tr1, spixdf = map)
 plot(tr1, by = "none", spixdf = map, addpoints = FALSE, final = FALSE, lpar = list(col = c(Brock = "blue", Calou = "orange", Chou = "green", Jean = "red"), lwd = 3))
 ```
 
 We can quickly look at the distribution of step lengths:
 
-```{r}
+```r
 dtr1 <- ld(tr1)
 head(dtr1)
 hist(dtr1$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of wild boar step lengths")
@@ -249,7 +249,7 @@ lines(density(dtr1$dist, na.rm = TRUE), lwd = 3)
 
 ... and turning angles (using a circular histogram):
 
-```{r}
+```r
 rose.diag(na.omit(dtr1$rel.angle), bins = 18, prop = 1.5)
 ```
 
@@ -261,7 +261,7 @@ build them into a `ltraj` object. Import and export will be the
 subject of another lesson, let's just do it now once and for all
 using `rpostgis` and `rgdal` without further explanation:
 
-```{r}
+```r
 library("rpostgis")
 library("rgdal")
 drv <- dbDriver("PostgreSQL")
@@ -276,7 +276,7 @@ individual #5. If you manage to do it properly, try to explore
 dynamically the trajectory with the function `trajdyn`, and play with
 the different parameters:
 
-```{r}
+```r
 trajdyn(tr2)
 ```
 
@@ -289,7 +289,7 @@ exact timestamps. Both are related to the temporal aspect of
 movement. Let's thus look at the temporal interval between every
 location, in days:
 
-```{r}
+```r
 plotltr(tr1, "dt/3600/24")
 ```
 
@@ -297,7 +297,7 @@ For Chou, there is a huge gap in the middle, because the individual
 was monitored two successive summers. We thus create two bursts for
 this individual, one per summer:
 
-```{r}
+```r
 tr1 <- cutltraj(tr1, "dt > 100*3600*24", nextr = TRUE)
 plotltr(tr1, "dt/3600/24")
 ```
@@ -309,7 +309,7 @@ in the trajectory for those days where there is no data. For this, we
 need to use the function `setNA` with a reference date (which will be
 the oldest date of the dataset):
 
-```{r}
+```r
 min(locs$Date)
 (ref <- dmy("29071992", tz = "UTC"))
 (tr1 <- setNA(tr1, ref, 1, units = "day"))
@@ -321,7 +321,7 @@ The intervals are now perfectly regular, with one day in between
 successive relocations. We can also see where NAs have been placed
 (this could be the subject of a separate analysis!):
 
-```{r}
+```r
 plotNAltraj(tr1, addlines = FALSE, ppar = list(pch = 15))
 ```
 
@@ -349,7 +349,7 @@ In this section, we are going to interpolate in time and in
 space. Let's start by interpolation in time, i.e. linear
 interpoloation of missing locations:
 
-```{r}
+```r
 (tr1t <- redisltraj(na.omit(tr1), 3600*24, type = "time"))
 col <- ifelse(is.na(tr1[[2]]$x), "white", "black")
 plot(tr1t[2], ppar = list(pch = 21, col = "black", bg = list(Calou.1 = col[-length(col)])))
@@ -358,7 +358,7 @@ plot(tr1t[2], ppar = list(pch = 21, col = "black", bg = list(Calou.1 = col[-leng
 In a second step, we interpolate in space, that is we rediscretize the
 trajectory with constant step length of 100 m:
 
-```{r}
+```r
 summary(dtr1$dist)
 (tr1s <- redisltraj(tr1, 100, nnew = 10))
 plot(tr1s[2])
@@ -379,7 +379,7 @@ home ranges methods that do not take movement into account, before
 incorporating movement information along steps. Let us start with
 Minimum Convex Polygons:
 
-```{r}
+```r
 tr1sp <- ltraj2spdf(tr1)
 summary(tr1sp)
 mcp1 <- mcp(tr1sp["id"])
@@ -390,7 +390,7 @@ plot(tr1sp, col = as.data.frame(tr1sp)[, "id"], add = TRUE)
 A second classical approach is kernel home ranges, which estimates a
 utilization distribution:
 
-```{r}
+```r
 kud1 <- kernelUD(tr1sp["id"], grid = 100, same4all = TRUE)
 image(kud1)
 image(kud1[[2]])
@@ -400,7 +400,7 @@ plot(mcp1[2, ], add = TRUE)
 Finally, we can estimate home ranges using the Brownian bridge kernel
 approach, which incorporates information along movement steps:
 
-```{r}
+```r
 liker(tr1, sig2 = 50, rangesig1 = c(1, 10))
 kbb1 <- kernelbb(tr1, sig1 = 2, sig2 = 50, grid = 100, same4all = TRUE)
 image(kbb1)
@@ -421,14 +421,14 @@ On Wednesday morning, we learned the importance of random walk theory
 in movement ecology. Now is the time to put it in practice! We will
 start by simulating a simple random walk for 1000 steps
 
-```{r}
+```r
 rw1 <- simm.crw(1:1000, r = 0, burst = "RW r = 0")
 plot(rw1, addpoints = FALSE)
 ```
 
 Let's have a look at step length and turning angle distributions:
 
-```{r}
+```r
 drw1 <- ld(rw1)
 hist(drw1$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of RW step lengths")
 lines(density(drw1$dist, na.rm = TRUE), lwd = 3)
@@ -438,7 +438,7 @@ rose.diag(na.omit(drw1$rel.angle), bins = 18, prop = 3)
 We can see the diffusive property of the random walk by increasing the
 number of steps to 100000:
 
-```{r}
+```r
 rw2 <- simm.crw(1:100000, r = 0, burst = "RW 100000 steps")
 plot(rw2, addpoints = FALSE)
 ```
@@ -447,7 +447,7 @@ The next step is to simulate correlated random walks by increasing the
 concentration parameter of turning angles (`r`). Remember that the
 simple RW is a specific case of CRW:
 
-```{r}
+```r
 crw0 <- simm.crw(1:1000, r = 0, id = "CRW0 r = 0 (RW)", h = 8)
 crw1 <- simm.crw(1:1000, r = 0.6, id = "CRW1 r = 0.6", h = 5)
 crw2 <- simm.crw(1:1000, r = 0.9, id = "CRW2 r = 0.9", h = 2)
@@ -458,7 +458,7 @@ plot(mov, addpoints = FALSE)
 
 We can also check step length and turning angle distributions:
 
-```{r}
+```r
 dcrw2 <- ld(crw2)
 hist(dcrw2$dist, breaks = 20, freq = FALSE, xlab = "Step length", main = "Histogram of CRW step lengths")
 lines(density(dcrw2$dist, na.rm = TRUE), lwd = 3)
@@ -483,7 +483,7 @@ Selection Functions. The first step is to create random steps, by
 drawing random step lengths and random turning angles within the set
 of observed steps:
 
-```{r}
+```r
 rdtr2 <- rdSteps(tr2, reproducible = TRUE)
 head(rdtr2)
 ```
@@ -491,7 +491,7 @@ head(rdtr2)
 The result is a data frame, that we convert to a
 `SpatialPointsDataFrame` using the coordinates at the end of the step:
 
-```{r}
+```r
 coordinates(rdtr2) <- data.frame(x = rdtr2$x + rdtr2$dx, y = rdtr2$y + rdtr2$dy)
 proj4string(rdtr2) <- "+init=epsg:32632"
 plot(rdtr2, pch = 20, cex = 0.2)
@@ -505,7 +505,7 @@ environmental variables of choice. Here we work with the land cover
 (Corine Land Cover) and the elevation (Digital Elevation Model), that
 we import with `rpostgis` without further explanation:
 
-```{r}
+```r
 corine <- pgGetRast(con, c("env_data", "corine_land_cover"))
 plot(corine)
 
@@ -517,7 +517,7 @@ We now extract the environmental variables at the end of the step; we
 also reclassify the land cover type into a limited number of
 categories:
 
-```{r}
+```r
 library("raster")
 rdtr2@data <- data.frame(rdtr2@data, dem = extract(dem, rdtr2), corine = extract(corine, rdtr2))
 table(rdtr2$corine)
@@ -532,7 +532,7 @@ Finally, given that the land cover type is a factor (i.e. qualitative
 variable), we need to convert it to a set of dummy variables, one of
 which will be dropped and used as a reference later:
 
-```{r}
+```r
 library("ade4")
 rdtr2@data <- data.frame(rdtr2@data, acm.disjonctif(rdtr2@data[, "corine", drop = FALSE]))
 head(rdtr2)
@@ -542,7 +542,7 @@ We can now run the conditional logistic regression on each strata (one
 observed step + 10 associated random steps) to check the selection on
 these two variables:
 
-```{r}
+```r
 library("survival")
 ssf1 <- clogit(case ~ dem + corine.forest + corine.open + strata(strata), data = rdtr2, method = "breslow")
 summary(ssf1)
@@ -573,7 +573,7 @@ export data frames.  The first step involves opening the connection,
 and may require username (`user`) and password (`password`) as
 additional parameters:
 
-```{r}
+```r
 library("RPostgreSQL")
 drv <- dbDriver("PostgreSQL")
 con <- dbConnect(drv, dbname = "gps_tracking_db", host = "localhost", user = "<user>", password = "<password>")
@@ -583,7 +583,7 @@ dbListTables(con)
 The package provide a generic function to import a given table into a
 `data.frame`:
 
-```{r}
+```r
 (tab <- dbReadTable(con, c("main", "animals")))
 class(tab)
 str(tab)
@@ -592,7 +592,7 @@ str(tab)
 However, this function is not able to handle geometry columns
 properly:
 
-```{r}
+```r
 tab <- dbReadTable(con, c("main", "gps_data_animals"))
 head(tab)
 str(tab)
@@ -601,7 +601,7 @@ str(tab)
 In this case, we need to write a specific query to get only the fields
 we want, and in the format we want:
 
-```{r}
+```r
 (query <- "SELECT * FROM main.animals;")
 class(query)
 (tab <- dbGetQuery(con, query))
@@ -612,7 +612,7 @@ str(tab)
 Let's do it now on the GPS data, and extract the projected coordinates
 (UTM):
 
-```{r}
+```r
 dbListFields(con, c("main", "gps_data_animals"))
 (query <- "SELECT animals_id, acquisition_time, longitude, latitude, ST_X(ST_Transform(geom, 32632)) AS x, ST_Y(ST_Transform(geom, 32632)) AS y, roads_dist, altitude_srtm
 FROM main.gps_data_animals WHERE gps_validity_code = 1")
@@ -624,7 +624,7 @@ dim(locs)
 
 We can now convert this data frame into a proper spatial object in R:
 
-```{r}
+```r
 library("sp")
 coordinates(locs) <- c("x", "y")
 class(locs)
@@ -635,7 +635,7 @@ We could also extract the SRID directly from PostGIS to declare it in
 our spatial object, but in this case, we projected the data on the fly
 to the UTM coordinates:
 
-```{r}
+```r
 query <- "SELECT DISTINCT(ST_SRID(geom)) FROM main.gps_data_animals WHERE geom IS NOT NULL;"
 dbGetQuery(con, query)
 proj4string(locs) <- CRS("+init=epsg:32632")
@@ -655,7 +655,7 @@ convert them to a proper `ltraj` object.
 `RPostgreSQL` also provides functions to export data back to PostGIS.
 Let's first load the `puechcirc` dataset as an example:
 
-```{r}
+```r
 library("hab")
 data(puechcirc)
 puechcirc
@@ -668,7 +668,7 @@ We first create a test schema in the database, using the function
 `dbSendQuery`.  We can then use it to send the points back to the
 database, using the function `dbWriteTable`:
 
-```{r}
+```r
 query <- "CREATE SCHEMA test;"
 dbSendQuery(con, query)
 query <- "COMMENT ON SCHEMA test IS 'Schema for test purpose.';"
@@ -679,7 +679,7 @@ dbWriteTable(con, c("test", "puechcirc"), dfpu)
 We can now convert the coordinates into a proper geometry in PostGIS,
 without forgetting to create a spatial index:
 
-```{r}
+```r
 query <- "ALTER TABLE test.puechcirc ADD COLUMN pts_geom geometry(POINT, 32632);"
 dbSendQuery(con, query)
 query <- "CREATE INDEX puechcirc_pts_geom_idx ON test.puechcirc USING GIST (pts_geom);"
@@ -717,7 +717,7 @@ The very first thing to do is to actually check that PostGIS has been
 enabled on the database, and if not, enable it. This is exactly the
 purpose of `pgPostGIS`:
 
-```{r}
+```r
 library("rpostgis")
 
 pgPostGIS(con)
@@ -728,7 +728,7 @@ We now demonstrate `pgGetGeom`, to import any geometry (POINTS, LINES,
 POLYGONS, etc.) into a `Spatial*DataFrame`. We use it to import roe
 deer GPS data into `locs3`:
 
-```{r}
+```r
 locs3 <- pgGetGeom(con, c("main", "gps_data_animals"))
 summary(locs3)
 ```
@@ -736,7 +736,7 @@ summary(locs3)
 We could have selected only the subset of valid points directly, and
 only specified columns:
 
-```{r}
+```r
 dbTableInfo(con, c("main", "gps_data_animals"))
 locs3 <- pgGetGeom(con, c("main", "gps_data_animals"), other.cols = c("animals_id", 
     "acquisition_time", "longitude", "latitude", "roads_dist", 
@@ -748,7 +748,7 @@ We can now reproject the points to UTM 32, in order to compare them to
 the locations imported at the very beginning of this lesson (in
 `locs`):
 
-```{r}
+```r
 proj4string(locs3)
 locs3 <- spTransform(locs3, CRS("+init=epsg:32632"))
 
@@ -778,7 +778,7 @@ to export the same data as `locs_r`.
 `rpostgis` provides a few additional features. For instance, you can
 extract the bounding box of any geometry table:
 
-```{r}
+```r
 pgGetBoundary(con, c("main", "gps_data_animals"))
 (bound <- pgGetBoundary(con, c("env_data", "study_area")))
 ```
@@ -787,7 +787,7 @@ As we saw from the previous lesson, `rpostgis` also provides
 additional functions to read and also write rasters, which are stored
 as `raster`s from the package `raster`:
 
-```{r}
+```r
 corine <- pgGetRast(con, c("env_data", "corine_land_cover"))
 plot(corine)
 
@@ -806,7 +806,7 @@ We can also write rasters to the database, using `pgWriteRast`. Here's
 an example where we first reclassify the DEM in R into two classes,
 and then send the reclassified raster to the database:
 
-```{r}
+```r
 (rec <- data.frame(from = c(0, 1000), to = c(1000, 5000), becomes = c(1,2)))
 
 # reclassify to new raster
@@ -826,7 +826,7 @@ equivalent functions for `data.frame`s: `dbReadDataFrame` and
 `dbWriteDataFrame`. To understand the difference, check the following
 code:
 
-```{r}
+```r
 head(dfpu)
 
 dbWriteTable(con, c("test", "dfpu_table"), dfpu)
@@ -859,7 +859,7 @@ object. For later visualization, the `ltraj` needs to have the
 associated projection data in a `CRS` object (this is not something
 that we can do later at this stage):
 
-```{r}
+```r
 library("adehabitatLT")
 data(puechcirc)
 
@@ -870,7 +870,7 @@ ltraj2pgtraj(con, puechcirc)
 With this approach, the trajectory is simply stored in the database,
 and can be retrieved without any modification:
 
-```{r}
+```r
 puech2 <- pgtraj2ltraj(con, "puechcirc")
 all.equal(puechcirc, puech2)
 ```
@@ -878,7 +878,7 @@ all.equal(puechcirc, puech2)
 The trajectory in the DB can now be dynamically explored with the
 function `explorePgtraj`:
 
-```{r}
+```r
 explorePgtraj(conn = con, schema = "traj", pgtraj = "puechcirc")
 ```
 
@@ -895,7 +895,7 @@ to use it. You can then explore it with `explorePgtraj`.
 Finally, we don't forget to close the connection to the database, as
 opened by RPostgreSQL at the beginning of this exercise:
 
-```{r}
+```r
 dbDisconnect(con)
 ```
 
@@ -925,7 +925,7 @@ From now on, we assume that Pl/R is properly installed on your system
 (which may be a tricky process). We can then enable Pl/R in the
 database, and check the outcome like this:
 
-```{sql}
+```sql
 CREATE EXTENSION plr;
 SELECT * FROM plr_version();
 ```
@@ -935,7 +935,7 @@ the same way you write functions in R. Indeed, the body of a Pl/R
 function uses the R syntax, because it is actually pure R code! A
 generic R code snippet such as:
 
-```{r}
+```r
 > x <- 10
 > 4/3*pi*x^3
 ```
@@ -943,7 +943,7 @@ generic R code snippet such as:
 can be directly embedded into a Pl/R function in PostgreSQL using a
 generic function skeleton with the Pl/R language:
 
-```{sql}
+```sql
 CREATE OR REPLACE FUNCTION tools.plr_fn ()
 RETURNS float8 AS
 $BODY$
@@ -955,7 +955,7 @@ LANGUAGE 'plr';
 
 The function can then be used in an SQL statement:
 
-```{sql}
+```sql
 SELECT tools.plr_fn ();
 ```
 
@@ -970,7 +970,7 @@ In a simple example, let's try to compute logarithms. We write a Pl/R
 function `r_log` to calculate the logarithm of a sample of numbers
 using R:
 
-```{sql}
+```sql
 CREATE OR REPLACE FUNCTION tools.r_log(float8, float8)
 RETURNS float AS
 $BODY$
@@ -983,7 +983,7 @@ Note that with a Pl/R function, the R engine does the computation, and
 PostgreSQL only handles the input and output, so that we can compare
 the outputs to the same logarithms computed by PostgreSQL:
 
-```{sql}
+```sql
 SELECT
   ST_Area(geom) AS area,
   log(ST_Area(geom)) AS pg_log,
@@ -1007,7 +1007,7 @@ date. We thus need to install in R the `maptools` package, together
 with `rgeos` and `rgdal` packages (which should already be there after
 the previous lesson):
 
-```{r}
+```r
 install.packages(c("rgeos", "rgdal", "maptools"))
 ```
 
@@ -1019,7 +1019,7 @@ sunset times (as a text array) for a spatial point expressed as a WKT,
 with its associated SRID, a timestamp to give the date and a time
 zone:
 
-```{sql}
+```sql
 CREATE OR REPLACE FUNCTION tools.daylight(
   wkt text,
   srid integer,
@@ -1046,7 +1046,7 @@ municipality of Terlago, northern Italy. Because R and PostgreSQL use
 different time zone formats, you need to pass the time zone to R
 literally as `Europe/Rome`:
 
-```{sql}
+```sql
 SELECT tools.daylight('POINT(11.001 46.001)', 4326, now(), 'Europe/Rome');
 ```
 
@@ -1056,7 +1056,7 @@ location corresponds to daylight or not. This is the purpose of the
 `is_daylight` function, which will prove useful to test the daylight
 for animal locations:
 
-```{sql}
+```sql
 CREATE OR REPLACE FUNCTION tools.is_daylight(
   wkt text,
   srid integer,
@@ -1081,14 +1081,14 @@ LANGUAGE 'plr';
 This function can be used on a single point, e.g. with the same
 coordinates as above:
 
-```{sql}
+```sql
 SELECT tools.is_daylight('POINT(11.001 46.001)', 4326, current_date, 'Europe/Rome');
 ```
 
 Or it can be used to a series of points, such as the first 10 valid
 locations:
 
-```{sql}
+```sql
 WITH tmp AS (SELECT ('Europe/Rome')::text AS tz)
 SELECT
   ST_AsText(geom) AS location,
@@ -1106,7 +1106,7 @@ In this section, we will embed the function `kernelUD` (from
 `adehabitatHR`) to compute kernel home ranges directly from
 PostGIS. We start by installing the package in R if necessary:
 
-```{r}
+```r
 install.packages("adehabitatHR")
 ```
 
@@ -1117,14 +1117,14 @@ type `hr` that stores a polygon as a WKT, together with its associated
 percentage (e.g. 90% corresponds to the area with a 90% probability of
 finding the animal of interest):
 
-```{sql}
+```sql
 CREATE TYPE tools.hr AS (percent int, wkt text);
 ```
 
 We thus create the function `tools.kernelud` to compute kernel home
 ranges using R:
 
-```{sql}
+```sql
 CREATE OR REPLACE FUNCTION tools.kernelud (wkt text, percent integer)
 RETURNS SETOF tools.hr AS
 $BODY$
@@ -1143,7 +1143,7 @@ kernel home range, for instance for animal 1 at 50, 90, and 95% (note
 that we subset only locations with a Y-coordinate greater than
 5,000,000):
 
-```{sql}
+```sql
 WITH tmp AS (SELECT unnest(ARRAY[50,90,95]) AS pc)
 SELECT (tools.kernelud(ST_AsText(ST_Collect(ST_Transform(geom, 32632))), pc)).*
 FROM main.gps_data_animals, tmp
@@ -1156,7 +1156,7 @@ Finally, we can now create a table `analysis.home_ranges_kernelud` to
 store the different kernel home ranges and various parameters of
 interest:
 
-```{sql}
+```sql
 CREATE TABLE analysis.home_ranges_kernelud(
   home_ranges_kernelud_id serial NOT NULL,
   animals_id integer NOT NULL,
@@ -1186,7 +1186,7 @@ CREATE INDEX gist_home_ranges_kernelud_index
 Let us now populate this table using 50 and 90% kernels for all
 animals:
 
-```{sql}
+```sql
 WITH
   tmp AS (SELECT unnest(ARRAY[50,90,95]) AS pc),
   kud AS (
@@ -1218,7 +1218,7 @@ ORDER BY animals_id, percent;
 We can display part of the outcome in this table, for instance to
 check that the area is increasing with higher percentage:
 
-```{sql}
+```sql
 SELECT animals_id, percentage, num_locations, area
 FROM analysis.home_ranges_kernelud
 ORDER BY animals_id, percentage;
