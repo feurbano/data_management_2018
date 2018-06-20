@@ -183,7 +183,8 @@ asPgtraj(con,
     animals = "animals_id",
     relocations = "geom",
     timestamps = "acquisition_time",
-    rids = "gps_data_animals_id")
+    rids = "gps_data_animals_id"
+    clauses = "WHERE gps_validity_code = 1")
 ```
 
 ```{r}
