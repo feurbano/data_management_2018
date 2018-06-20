@@ -1,0 +1,10 @@
+install.packages("adehabitatHS")
+install.packages("raster")
+install.packages("lubridate")
+install.packages("devtools")
+
+library("devtools")
+install_github("basille/basr")
+install_github("basille/hab")
+install_github("mablab/rpostgis")
+install_github("mablab/rpostgisLT", ref = "dev")
