@@ -7,11 +7,6 @@ You will now build the `ltraj`, with the name `tr2`, and only keep
 individual #5. 
 
 ```r
-## Connection to FEM DB
-con <- dbConnect(drv, dbname = "gps_tracking_db", host = "eurodeer2.fmach.it", user = "basic_user", password = "tr3nt02018")
-
-con_adm <- dbConnect(drv, dbname = "gps_tracking_db", host = "eurodeer2.fmach.it", user = "mbasille", password = "tigana")
-
 ### Trajectories in R
 str(locs2)
 tr2 <- as.ltraj(coordinates(locs2), locs2$acquisition_time, locs2$animals_id)
@@ -102,46 +97,96 @@ plot(lev1)
 ```
 
 
+#### 3.3.1.1 Import data from PostGIS
+
+```{r}
+(tr2 <- as.ltraj(coordinates(locs), date = locs$acquisition_time, id = locs$animals_id))
+
+### Alternatively from analysis.animal_traj_steps
+query <- "SELECT animals_id AS id, animals_id AS burst, ST_X(ST_Transform(ST_StartPoint(geom), 32632)) AS x, ST_Y(ST_Transform(ST_StartPoint(geom), 32632)) AS y, acquisition_time AS date, d_x AS dx, d_y AS dy, dt_s AS dt, dist_m AS dist, r2n AS R2n, absolute_angle AS \"abs.angle\", relative_angle AS \"rel.angle\"
+FROM analysis.animal_traj_steps;"
+locsdf <- dbGetQuery(con, query)
+head(locsdf)
+class(locsdf)
+dim(locsdf)
+
+(tr3 <- dl(locsdf))
+```
+
+
 #### 3.3.1.2 Export data to PostGIS
 
-
 ```{r}
-dbWriteTable(con_adm, c("temp", "puechcirc"), dfpu)
-```
-
-```{r}
-query <- "ALTER TABLE temp.puechcirc ADD COLUMN pts_geom geometry(POINT, 32632);"
-dbSendQuery(con_adm, query)
-query <- "CREATE INDEX puechcirc_pts_geom_idx ON temp.puechcirc USING GIST (pts_geom);"
-dbSendQuery(con_adm, query)
-query <- "UPDATE temp.puechcirc SET pts_geom=ST_SetSRID(ST_MakePoint(x, y), 32632)
+query <- "ALTER TABLE test.puechcirc ADD COLUMN stp_geom geometry(LINESTRING, 32632);"
+dbSendQuery(con, query)
+query <- "CREATE INDEX puechcirc_stp_geom_idx ON test.puechcirc USING GIST (stp_geom);"
+dbSendQuery(con, query)
+query <- "UPDATE test.puechcirc SET stp_geom=ST_SetSRID(ST_MakeLine(ST_MakePoint(x, y), ST_MakePoint(x + dx, y + dy)), 32632)
 WHERE x IS NOT NULL AND y IS NOT NULL;"
-dbSendQuery(con_adm, query)
-query <- "COMMENT ON TABLE temp.puechcirc IS 'Telemetry data (as points) from 2 wild boars at Puechabon (from RPostgreSQL).';"
-dbSendQuery(con_adm, query)
+dbSendQuery(con, query)
+```
+
+
+#### 3.3.2.1 Import data from PostGIS
+
+
+```{r}
+roads <- pgGetGeom(con, c("env_data", "roads"))
+roads <- spTransform(roads, locs3@proj4string)
+
+plot(roads, axes = T)
+plot(locs3, add = T, col = locs3$animals_id)
+```
+
+### 3.3.2.2 Export to PostGIS
+
+```{r}
+dbDrop(con, "test", type = "schema", cascade = TRUE)
+
+dbSchema(con, "test")
+dbComment(con, "test", comment = "Test schema for workshop.", type = "schema")
+
+# new table
+new_table <- c("test","locs_pg")
+
+# insert data
+pgInsert(con, new_table, data.obj = locs3, new.id = "id")
+
+# add geom index
+dbIndex(con, new_table, colname = "geom", method = "gist")
+
+# add key
+dbAddKey(con, new_table, colname = "id", type = "primary")
 ```
 
 ```{r}
-pgWriteRast(con_adm, c("temp", "elev_reclass"), raster = ele.rec)
+dbSchema(con, "test")
+
+# new table
+new_table <- c("test","locs_r")
+
+# insert data
+dbWriteTable(con, new_table, locs3@data)
+
+# create geom column, with index
+pgMakePts(con, new_table, x = "longitude", y = "latitude", index = TRUE, srid = 4326)
+```
+
+
+### 3.3.X+1 Let's not forget about trajectories: rpostgisLT
+
+
+```{r}
+asPgtraj(con,
+    relocations_table = c("main", "gps_data_animals"),
+    schema = "traj",    
+    animals = "animals_id",
+    relocations = "geom",
+    timestamps = "acquisition_time",
+    rids = "gps_data_animals_id")
 ```
 
 ```{r}
-head(dfpu)
-
-dbWriteTable(con_adm, c("temp", "dfpu_table"), dfpu)
-df1 <- dbReadTable(con_adm, c("temp", "dfpu_table"))
-head(df1)
-
-dbWriteDataFrame(con_adm, c("temp", "dfpu"), dfpu)
-df2 <- dbReadDataFrame(con_adm, c("temp", "dfpu"))
-head(df2)
-str(df2)
-
-attributes(dfpu$date)
-attributes(df1$date)
-attributes(df2$date)
-
-dfpu$date[1]
-df1$date[1]
-df2$date[1]
+explorePgtraj(conn = con, schema = "traj", pgtraj = "pgtraj")
 ```
+
