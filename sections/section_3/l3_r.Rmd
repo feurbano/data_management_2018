@@ -31,6 +31,11 @@
         - [3.3.5 Topic 11: Let's not forget about trajectories, here comes `rpostgisLT`](#335-topic-11-lets-not-forget-about-trajectories-here-comes-rpostgislt)
             - [Exercice 11: Create a trajectory in the DB with `asPgtraj`](#exercice-11-create-a-trajectory-in-the-db-with-aspgtraj)
         - [3.3.6 Closure…](#336-closure)
+    - [3.4 Extending PostGIS with Pl/R (DEMO)](#34-extending-postgis-with-plr-demo)
+        - [3.4.1 Getting Started with Pl/R](#341-getting-started-with-plr)
+        - [3.4.2 In the Middle of the Night](#342-in-the-middle-of-the-night)
+        - [3.4.2 Extending the Home Range Concept](#342-extending-the-home-range-concept)
+        - [3.4.4 Concluding remarks about Pl/R](#344-concluding-remarks-about-plr)
 
 <!-- markdown-toc end -->
 
@@ -895,5 +900,349 @@ dbDisconnect(con)
 ```
 
 
-<!-- ## 3.4 Extending PostGIS with Pl/R (DEMO) -->
+## 3.4 Extending PostGIS with Pl/R (DEMO)
 
+Until now, we saw what PostGIS had to offer to process and manage
+trackign data, and how R could be used to analyse movement data. We
+also explored different ways to transfer data from PostGIS to R and
+vice versa, which highlighted the many hurdles and difficulties in
+streamlining the workflow. Pl/R is one possible answer to this
+problem.
+
+Pl/R is a loadable procedural language that allows the use of the R
+engine and libraries directly inside the database, thus embedding R
+scripts into SQL statements and database functions and triggers.
+
+This lesson is a simplified version of Chapter 11 ("A Step Further in
+the Integration of Data Management and Analysis: Pl/R") from the book
+Spatial Database for GPS Wildlife Tracking Data (Urbano & Cagnacci,
+2014).
+
+
+### 3.4.1 Getting Started with Pl/R
+
+From now on, we assume that Pl/R is properly installed on your system
+(which may be a tricky process). We can then enable Pl/R in the
+database, and check the outcome like this:
+
+```{sql}
+CREATE EXTENSION plr;
+SELECT * FROM plr_version();
+```
+
+Now you can create functions in Pl/R procedural language pretty much
+the same way you write functions in R. Indeed, the body of a Pl/R
+function uses the R syntax, because it is actually pure R code! A
+generic R code snippet such as:
+
+```{r}
+> x <- 10
+> 4/3*pi*x^3
+```
+
+can be directly embedded into a Pl/R function in PostgreSQL using a
+generic function skeleton with the Pl/R language:
+
+```{sql}
+CREATE OR REPLACE FUNCTION tools.plr_fn ()
+RETURNS float8 AS
+$BODY$
+  x <- 10
+  4/3*pi*x^3
+$BODY$
+LANGUAGE 'plr';
+```
+
+The function can then be used in an SQL statement:
+
+```{sql}
+SELECT tools.plr_fn ();
+```
+
+Fortunately, we can also have more useful pieces of code in Pl/R. In
+this workflow, however, we still need to communicate data from the
+database to and from R. Pl/R can natively handle several types,
+including booleans (converted to `logical` in R), all forms of integer
+(converted to `integer`) or numeric (converted to `numeric`) and all
+forms of text (converted to `character`).
+
+In a simple example, let's try to compute logarithms. We write a Pl/R
+function `r_log` to calculate the logarithm of a sample of numbers
+using R:
+
+```{sql}
+CREATE OR REPLACE FUNCTION tools.r_log(float8, float8)
+RETURNS float AS
+$BODY$
+  log(arg1, arg2)
+$BODY$
+LANGUAGE 'plr';
+```
+
+Note that with a Pl/R function, the R engine does the computation, and
+PostgreSQL only handles the input and output, so that we can compare
+the outputs to the same logarithms computed by PostgreSQL:
+
+```{sql}
+SELECT
+  ST_Area(geom) AS area,
+  log(ST_Area(geom)) AS pg_log,
+  tools.r_log(ST_Area(geom), 10) AS r_log,
+  ln(ST_Area(geom)) AS pg_ln,
+  tools.r_log(ST_Area(geom), exp(1)) AS r_ln
+FROM analysis.view_convex_hulls;      
+```
+
+Fortunately, the results seem consistent…
+
+
+### 3.4.2 In the Middle of the Night
+
+One of the most powerful assets of R is its broad and ever-growing
+package ecosystem. In this example, you are going to implement a
+useful feature concealed in the `maptools` package, which provides a
+set of functions able to deal with the position of the sun and compute
+crepuscule, sunrise and sunset times for a given location at a given
+date. We thus need to install in R the `maptools` package, together
+with `rgeos` and `rgdal` packages (which should already be there after
+the previous lesson):
+
+```{r}
+install.packages(c("rgeos", "rgdal", "maptools"))
+```
+
+Pl/R can communicate basic data types from PostgreSQL and R, but
+cannot handle spatial objects. To circumvent this problem, we will use
+well-known text (WKT) representations, which are simply passed as text
+strings. Here is the daylight function, which returns the sunrise and
+sunset times (as a text array) for a spatial point expressed as a WKT,
+with its associated SRID, a timestamp to give the date and a time
+zone:
+
+```{sql}
+CREATE OR REPLACE FUNCTION tools.daylight(
+  wkt text,
+  srid integer,
+  datetime timestamptz,
+  timezone text)
+RETURNS text[] AS
+$BODY$
+  require(rgeos)
+  require(maptools)
+  require(rgdal)
+  pt <- readWKT(wkt, p4s = CRS(paste0("+init=epsg:", srid)))
+  dt <- as.POSIXct(substring(datetime, 1, 19), tz = timezone)
+  sr <- sunriset(pt, dateTime = dt, direction = "sunrise",
+      POSIXct.out = TRUE)$time
+  ss <- sunriset(pt, dateTime = dt, direction = "sunset",
+      POSIXct.out = TRUE)$time
+  return(c(as.character(sr), as.character(ss)))
+$BODY$
+LANGUAGE 'plr';
+```
+
+Let's get the sunrise and sunset times for today, near the
+municipality of Terlago, northern Italy. Because R and PostgreSQL use
+different time zone formats, you need to pass the time zone to R
+literally as `Europe/Rome`:
+
+```{sql}
+SELECT tools.daylight('POINT(11.001 46.001)', 4326, now(), 'Europe/Rome');
+```
+
+Let's now modify this function to return a boolean value (`TRUE` or
+`FALSE`) indicating whether a given time of the day at a given
+location corresponds to daylight or not. This is the purpose of the
+`is_daylight` function, which will prove useful to test the daylight
+for animal locations:
+
+```{sql}
+CREATE OR REPLACE FUNCTION tools.is_daylight(
+  wkt text,
+  srid integer,
+  datetime timestamptz,
+  timezone text)
+RETURNS boolean AS
+$BODY$
+  require(rgeos)
+  require(maptools)
+  require(rgdal)
+  pt <- readWKT(wkt, p4s = CRS(paste0("+init=epsg:", srid)))
+  dt <- as.POSIXct(substring(datetime, 1, 19), tz = timezone)
+  sr <- sunriset(pt, dateTime = dt, direction = "sunrise",
+      POSIXct.out = TRUE)$time
+  ss <- sunriset(pt, dateTime = dt, direction = "sunset",
+      POSIXct.out = TRUE)$time
+  return(ifelse(dt >= sr & dt < ss, TRUE, FALSE))
+$BODY$
+LANGUAGE 'plr';
+```
+
+This function can be used on a single point, e.g. with the same
+coordinates as above:
+
+```{sql}
+SELECT tools.is_daylight('POINT(11.001 46.001)', 4326, current_date, 'Europe/Rome');
+```
+
+Or it can be used to a series of points, such as the first 10 valid
+locations:
+
+```{sql}
+WITH tmp AS (SELECT ('Europe/Rome')::text AS tz)
+SELECT
+  ST_AsText(geom) AS location,
+  acquisition_time AT TIME ZONE tz AS acquisition_time,
+  tools.is_daylight(ST_AsText(geom), ST_SRID(geom), acquisition_time AT TIME ZONE tz, tz)
+FROM main.gps_data_animals, tmp
+WHERE gps_validity_code = 1
+LIMIT 10;
+```
+
+
+### 3.4.2 Extending the Home Range Concept
+
+In this section, we will embed the function `kernelUD` (from
+`adehabitatHR`) to compute kernel home ranges directly from
+PostGIS. We start by installing the package in R if necessary:
+
+```{r}
+install.packages("adehabitatHR")
+```
+
+We want to be able to produce the home range contours as produced by
+the kernel utilization distribution (see the help page for the
+function `kernelUD` in R). To do this, we first need to create a new
+type `hr` that stores a polygon as a WKT, together with its associated
+percentage (e.g. 90% corresponds to the area with a 90% probability of
+finding the animal of interest):
+
+```{sql}
+CREATE TYPE tools.hr AS (percent int, wkt text);
+```
+
+We thus create the function `tools.kernelud` to compute kernel home
+ranges using R:
+
+```{sql}
+CREATE OR REPLACE FUNCTION tools.kernelud (wkt text, percent integer)
+RETURNS SETOF tools.hr AS
+$BODY$
+  require(rgeos)
+  require(adehabitatHR)
+  geom <- readWKT(wkt)
+  kud <- kernelUD(geom)
+  return(data.frame(percent = percent, wkt = sapply(percent, function(x)
+      writeWKT(getverticeshr(kud, x)))))
+$BODY$
+LANGUAGE plr;
+```
+
+We can now query the table with all animal locations to compute the
+kernel home range, for instance for animal 1 at 50, 90, and 95% (note
+that we subset only locations with a Y-coordinate greater than
+5,000,000):
+
+```{sql}
+WITH tmp AS (SELECT unnest(ARRAY[50,90,95]) AS pc)
+SELECT (tools.kernelud(ST_AsText(ST_Collect(ST_Transform(geom, 32632))), pc)).*
+FROM main.gps_data_animals, tmp
+WHERE animals_id = 1 AND ST_Y(ST_Transform(geom, 32632)) > 5000000
+GROUP BY pc
+ORDER BY pc;
+```
+
+Finally, we can now create a table `analysis.home_ranges_kernelud` to
+store the different kernel home ranges and various parameters of
+interest:
+
+```{sql}
+CREATE TABLE analysis.home_ranges_kernelud(
+  home_ranges_kernelud_id serial NOT NULL,
+  animals_id integer NOT NULL,
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  num_locations integer,
+  area numeric(13,5),
+  geom geometry (multipolygon, 32632),
+  percentage double precision,
+  insert_timestamp timestamp with time zone DEFAULT now(),
+  CONSTRAINT home_ranges_kernelud_pk
+    PRIMARY KEY (home_ranges_kernelud_id),
+  CONSTRAINT home_ranges_kernelud_animals_fk
+    FOREIGN KEY (animals_id)
+    REFERENCES main.animals (animals_id) MATCH SIMPLE
+    ON UPDATE NO ACTION ON DELETE NO ACTION);
+COMMENT ON TABLE analysis.home_ranges_kernelud
+IS 'Table that stores the home range polygons derived from kernelUD. The area is computed in squared km.';
+CREATE INDEX fki_home_ranges_kernelud_animals_fk
+  ON analysis.home_ranges_kernelud
+  USING btree (animals_id);
+CREATE INDEX gist_home_ranges_kernelud_index
+  ON analysis.home_ranges_kernelud
+  USING gist (geom);
+```
+
+Let us now populate this table using 50 and 90% kernels for all
+animals:
+
+```{sql}
+WITH
+  tmp AS (SELECT unnest(ARRAY[50,90,95]) AS pc),
+  kud AS (
+    SELECT
+      animals_id,
+      min(acquisition_time) AS start_time,
+      max(acquisition_time) AS end_time,
+      count(animals_id) AS num_locations,
+      (tools.kernelud(ST_AsText(ST_Collect(ST_Transform(geom, 32632))), pc)).*
+    FROM main.gps_data_animals, tmp
+    WHERE ST_X(ST_Transform(geom, 32632)) > 650000
+      AND ST_Y(ST_Transform(geom, 32632)) > 5000000
+    GROUP BY animals_id,pc
+    ORDER BY animals_id,pc)
+INSERT INTO analysis.home_ranges_kernelud (animals_id, start_time, end_time,
+  num_locations, area, geom, percentage)
+SELECT
+  animals_id,
+  start_time,
+  end_time,
+  num_locations,
+  ST_Area(wkt) / 1000000,
+  ST_GeomFromText(wkt, 32632),
+  percent / 100.0
+FROM kud
+ORDER BY animals_id, percent;
+```
+
+We can display part of the outcome in this table, for instance to
+check that the area is increasing with higher percentage:
+
+```{sql}
+SELECT animals_id, percentage, num_locations, area
+FROM analysis.home_ranges_kernelud
+ORDER BY animals_id, percentage;
+```
+
+… and explore in QGIS the different polygons associated to different
+percentages for each animal, with the GPS locations overlaid.
+
+
+### 3.4.4 Concluding remarks about Pl/R
+
+The benefits of Pl/R are obvious: it allows to embed R (and its myriad
+of packages) into the database, thus enhancing the database itself
+with R superpowers! One of the biggest advantage of this approach is
+to streamline procedures that would involve going back and forth from
+PostGIS to R: imagine for instance a scenario where you would prepare
+a trajectory in PostGIS, import it in R to compute Brownian bridge
+kernels, which you would export back to PostGIS to intersect them with
+environmental GIS layers (e.g. Corine Land Cover), before sending the
+results of the intersection to R again for further analysis… Using
+Pl/R, you could easily embed the R functions required to compute
+Brownian bridge kernels, and thus having a completely smooth workflow.
+
+The limits of the approach are, unfortunately, exactly the same as for
+connecting R to PostGIS: communicating complex spatial objects can be
+a real issue (e.g. using `rgdal` or manipulating rasters in
+general). However, we can only expect progress in this area.
