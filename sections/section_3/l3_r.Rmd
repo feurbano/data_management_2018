@@ -1140,14 +1140,13 @@ LANGUAGE plr;
 
 We can now query the table with all animal locations to compute the
 kernel home range, for instance for animal 1 at 50, 90, and 95% (note
-that we subset only locations with a Y-coordinate greater than
-5,000,000):
+that we only use valid locations, as usual):
 
 ```sql
 WITH tmp AS (SELECT unnest(ARRAY[50,90,95]) AS pc)
 SELECT (tools.kernelud(ST_AsText(ST_Collect(ST_Transform(geom, 32632))), pc)).*
 FROM main.gps_data_animals, tmp
-WHERE animals_id = 1 AND ST_Y(ST_Transform(geom, 32632)) > 5000000
+WHERE animals_id = 1 AND gps_validity_code = 1
 GROUP BY pc
 ORDER BY pc;
 ```
@@ -1184,7 +1183,7 @@ CREATE INDEX gist_home_ranges_kernelud_index
 ```
 
 Let us now populate this table using 50 and 90% kernels for all
-animals:
+animals except number 6:
 
 ```sql
 WITH
@@ -1197,8 +1196,8 @@ WITH
       count(animals_id) AS num_locations,
       (tools.kernelud(ST_AsText(ST_Collect(ST_Transform(geom, 32632))), pc)).*
     FROM main.gps_data_animals, tmp
-    WHERE ST_X(ST_Transform(geom, 32632)) > 650000
-      AND ST_Y(ST_Transform(geom, 32632)) > 5000000
+    WHERE gps_validity_code = 1
+      AND animals_id <> 6
     GROUP BY animals_id,pc
     ORDER BY animals_id,pc)
 INSERT INTO analysis.home_ranges_kernelud (animals_id, start_time, end_time,
