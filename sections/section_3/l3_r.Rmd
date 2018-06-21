@@ -213,7 +213,6 @@ such in R. We need to do it now, using the package `lubridate`:
 
 
 ```r
-
 class(locs$Date)
 library("lubridate")
 locs$Date <- ymd(paste0("19", locs$Date), tz = "UTC")
@@ -274,9 +273,10 @@ head(locs2)
 You will now build the `ltraj`, with the name `tr2`, and only keep
 individual #5. If you manage to do it properly, try to explore
 dynamically the trajectory with the function `trajdyn`, and play with
-the different parameters:
+the different parameters (run `X11` first if you're using RStudio):
 
 ```r
+X11()                                   # Optional for RStudio
 trajdyn(tr2)
 ```
 
@@ -862,8 +862,9 @@ that we can do later at this stage):
 ```r
 library("adehabitatLT")
 data(puechcirc)
-
 attr(puechcirc, "proj4string") <- CRS("+init=epsg:27573")
+
+library("rpostgisLT")
 ltraj2pgtraj(con, puechcirc)
 ```
 
