@@ -13,4 +13,4 @@ This repository stores the lessons and presentations of the course **Dealing wit
 * **[Flash talks from students](https://github.com/feurbano/data_management_2018/tree/master/sections/flash_talks)**
 * **[Data](https://github.com/feurbano/data_management_2018/raw/master/sections/data/tracking_db.zip)**
 
-The material reported in these lessons has been created by Ferdinando Urbano, Francesca Cagnacci, Mattieu Basille and David Bucklin and is partially based on the book **[Spatial Database for GPS Wildlife Tracking Data](https://www.springer.com/us/book/9783319037424)** (Urbano & Cagnacci, 2014).
+The material reported in lessons 2 has been created by Ferdinando Urbano, Francesca Cagnacci, Mattieu Basille and David Bucklin and is partially based on the book **[Spatial Database for GPS Wildlife Tracking Data](https://www.springer.com/us/book/9783319037424)** (Urbano & Cagnacci, 2014).
