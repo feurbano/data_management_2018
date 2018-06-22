@@ -1,6 +1,6 @@
 # Dealing with Spatio-Temporal Data in Movement and Population Ecology: PROGRAM
 
-## 0. Introduction to Data Management (Cagnacci & Urbano, 2.5 h)
+## 0. Introduction to Data Management in Movement and Population Ecology (Cagnacci & Urbano, 2.5 h)
 * 0.1 Introduction to spatial objects in animal ecology 
 * 0.2 Introduction to Data Management and Spatial Database  
 * 0.3 Installation of PostgreSQL/PostGIS and pgAdmin 
