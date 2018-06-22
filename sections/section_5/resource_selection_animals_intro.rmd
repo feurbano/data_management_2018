@@ -1,0 +1,420 @@
+---
+title: "Resource selection by animals - an introduction"
+author: "Emiel van Loon"
+date: "June 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this module we will show through simple examples how resource selection can be applied in R and how it should be interpreted.
+
+Resource use has been studied by a number of analysis techniques the popularity of these techniques has differed over time. Simply because some data types or analysis techniques were simply not developed yet or couldn't be computed due to lack of suitable software.
+But still, there isn't a single type of analysis that would be preferred in any situation. The appropriate method to use is determined by the data that was collected during the study that is often controlled by logistics, funding, and population size of the species studied. As methods to identify animal use of the landscape (e.g. GPS technology, wildlife cameras) and measures of resource or habitats (i.e., GIS layers) have improved, the methods to analyze the data have evolved (Cooper and Millspaugh 2001, Manly et al. 2002).
+Several commonly used measures of habitat use or resource selection include:
+
+- Compositional Analysis (Aebischer et al. 1993)
+- Mahalanobis Distance (Clark et al. 1993)
+- Selection Ratios (Manly et al. 2002)
+- Resource Selection Functions (Cooper and Millspaugh 2001)
+- Step Selection Functions (Fortin, 2005)
+
+In today's practical we will only demonstrate and study Selection Ratio's and Resource Selection Functions.
+
+
+## Processing environmental data
+
+Before we begin with the actual resource selection analyses, we first need to prepare the environmental data of interest. These data are those that we think
+are representing factors influencing the ecology of the study-animals at 
+the scale of our questions.
+
+Such variables can be distance metrics (e.g., distance to roads) or landscape/topographic characteristics (e.g., elevation, slope).
+
+Ways to calculate such values in QGIS and PostGIS were already introduced 
+earlier in this week, for that reason we won't show how to conduct these tasks
+(yet in a different way) in R as well.
+However, we do want to outline the basic steps involved when processing environmental data for resource selection. 
+
+1. calculate the extent of the movement data, and make sure to have 
+environmental data for the relevant spatial domain
+2. if different environmental variables inhomogeneous in resolution or contain gaps: make these homogeneous by aggregation/desaggregation and interpolation
+2. make sure the movement data is representative and unbiased (e.g. if you are comparing day versus night, sampling rate during day and night should be comparable); if not, make appropriate corrections by e.g. subsampling
+3. determine what should be considered as 'available' geographical space
+4. determine how the 'used' space should be calculated (e.g. time spent in individual grid cells or rather based on a home-range)
+5. select the environmental data at the used points
+6. select the environmental data at the available points
+7. make appropriate summaries of 'used' and 'available' per individual or 
+population (depending on the question that is of interest)
+
+Places where you can find resources (and example scripts) for these tasks
+in R are the NEON tutorial on spatial data: https://www.neonscience.org/resources/data-tutorials 
+
+Another rich resource is the book on Geocomputation in R by Robin Lovelace and others: https://geocompr.robinlovelace.net/index.html
+
+
+## Selection ratios
+
+### Demonstration (15 minutes)
+
+In this section we will focus on Selection Ratios. Selection Ratios compare the  general use of a resource (habitat), given what is available. 
+
+To structure the resource selection problem in animal tracking, Thomas and Taylor (1993) proposed to distinguish three types of designs (comparable to the four orders distinguished by Johnson, 1980), based on the choice for defining usage and availability of resources at the group or individual level:
+
+1. Design I	 - measuring resource use as well as availability at population level
+2. Design II - measuring resource use at individual level and availability at population level
+3. Design III	- measuring both resource use and availability per individual
+
+This division has since then often been followed and will also be used in this practical. It has been implemented in the adehabitatHS package as well, through the functions `widesI`, `widesII` and `widesIII`
+
+Let's go through a small demonstration of how this may work, using the data that
+is already present in the `adehabitatHS` package.
+
+```{r}
+library(adehabitatHS)
+
+# this example comes from Manly et al., 2003, p.52
+moose.avail <- c(0.34, 0.101, 0.104, 0.455)
+moose.used <- c(25, 22, 30, 40)
+names(moose.used) <- c("InBurnInterior",
+                     "InBurnEdge",
+                     "OutOfBurnEdge",
+                     "OutOfBurnFurther")
+names(moose.avail) <- names(moose.used)
+```
+
+To test whether the used distribution is similar to the (expected) availability ratio's you can conduct a basic chi-squared test for goodness of fit would
+do the job.
+
+```{r}
+chisq.test(moose.used,p=moose.avail)
+```
+
+And in this case (as nearly always in animal ecology), the null-hypothesis of
+comparable distributions is rejected. However, this is a very information-poor
+type of test. But it is good to realize that the selection-ratios are related part of the family of 'GOF' tests, but no more than that.
+It is also helpfull to realize that space does not come into play in this type of analysis.
+And a final side-note: this type of analysis the areas are estimated in an unbiased way furthermore assuming: (i) independence between animals, and (ii) all animals are selecting habitat in the same way (in addition to "traditional" hypotheses in these kinds of studies: no territoriality, all animals having equal access to all available resource units, etc.).
+
+Beyond the question of oveall similarity to a theoretical distribution, we would
+like to know which resouce is particularly selected for or against. The 'selection ratio' methods have been deviced exaclty to give more elaborate information about the degree to which each resource is used.
+
+```{r}
+(SRmoose <- widesI(moose.used, moose.avail))
+plot(SRmoose, caxis = 0.7, clab = 1, ylog = FALSE, errbar = c("CI", "SE"),
+        main = "Manly selectivity measure", noorder = TRUE)
+```
+
+From this output the actual selection ratio's are most informative.
+A ratio higher than 1 (in the output denoted by `Wi` means that it is used more 
+than available and a ratio lower than one implies that is used less.
+The output by the `wides`-functions also provides an overview of how the selection ratios differ among each other (using a conservative correction for multiple testing).
+
+Let's move on to a second example (Manly et al., 2003, p.67). Here a design II analysis is conducted on bighorn data.
+
+```{r}
+data(bighorn)
+str(bighorn)
+(SRbighorn1 <- widesII(bighorn$used, bighorn$availT, alpha = 0.1))
+plot(SRbighorn1)
+```
+
+If the availability is not known, it should be specified as in the same units 
+as the 'used' area. An estimate is then made by the `wides` functions, which always results in a larger uncertainty than when the availability is specified as 'known'.
+
+```{r}
+(wi <- widesII(bighorn$used, bighorn$availE, avknown = FALSE, alpha = 0.1))
+plot(wi)
+```
+
+Now let's practice a little bit by ourselves, using some data that has already
+been preprocesses (`deer.csv`), and which gives a more realistic demonstration.
+This data file contains several habitat variables (e.g. crop and BinRoad),
+which can be evaluated. In the column 'use' both selected sites (1) and 
+unselected sites (0, from a relevant neighbourhood) are present.
+The crop-categories refer to:
+
+1. Sunflower,summer crops, random crops, grassland
+2. Winter crops
+3. Alfalfa
+4. Forest
+5. Shrubland
+
+
+This demo shows the amount of pre-processing that needs to go on before
+you'd have the raw input. 
+
+```{r} 
+DSR <- read.csv("deer.csv",header=T)
+
+#Remove deer that cause errors later on
+DSR <- subset(DSR,DSR$animal_id !="647579A")
+DSR$animal_id <- factor(DSR$animal_id)
+used <- subset(DSR, DSR$use == 1)
+used <- used[c(-1,-3:-6,-8:-15)]
+used <- xtabs(~used$animal_id + used$crop, used)
+used <- as.data.frame.matrix(used[1:13, 1:5])
+
+rand <- subset(DSR, DSR$use == 0)
+rand <- rand[c(-1,-3:-6,-8:-16)]
+rand <- xtabs(~rand$animal_id + rand$crop, rand)
+rand <- as.data.frame.matrix(rand[1:13, 1:5])
+
+(pvt.W <- widesIII(used,rand,avknown = FALSE, alpha = 0.1))
+plot(pvt.W)
+```
+  
+```{r} 
+#Now run on distance to roads binned into 10 categories
+DSR <- read.csv("deer.csv",header=T)
+
+#Delete deer that have limited data
+DSR <- subset(DSR,DSR$animal_id !="647582A" & DSR$animal_id !="647584A")
+# remove empty levels
+DSR$animal_id <- factor(DSR$animal_id)
+
+#Bin roads into 4 categories instead of 10
+DSR$NewRoad <- DSR$BinRoad
+levels(DSR$NewRoad)<-list(class1=c("0-200","200-400"), class2=c("400-600",
+    "600-800"), class3=c("800-1000","1000-12000","1200-1400"),class4=c("1400-1600",
+    "1600-1800", "1800-2000"))
+
+used <- subset(DSR, DSR$use == 1)
+used <- used[c(-1:-6,-8:-15)]
+used <- xtabs(~used$animal_id + used$NewRoad, used)
+used <- as.data.frame.matrix(used[1:12, 1:4])
+
+rand <- subset(DSR, DSR$use == 0)
+rand <- rand[c(-1:-6,-8:-15)]
+rand <- xtabs(~rand$animal_id + rand$NewRoad, rand)
+rand <- as.data.frame.matrix(rand[1:12, 1:4])
+
+( pvt.road <- widesIII(used,rand,avknown = FALSE, alpha = 0.1) )
+
+plot(pvt.road)
+```
+
+### Exercises (1 hour)
+
+Pick one of the exercises below to get some exeperience in applying the above 
+techniques. We will discuss these later on.
+
+1. Try the Design I and II tests on the deer-data.
+2. Investigate the effect of having different degrees of aggregation 
+in the land uses or roads on the results.
+3. Try to apply the above techinque to the selection by the roe deer and 
+Corine data that was used during the first three days of this course. 
+
+### Discussion (15 minutes)
+
+After this block we will look into how far we got, and discuss some 
+issues with the 'Selection Ratio'-approach.
+
+
+## Resource selection functions
+
+Resource selection functions are just ordinary two-class classification models,  really. The two classes comprise "used" and "available" habitats. Discussing the ecological nuances of use and availability and learning about the issues with 
+making an appropriate study design for RSFs would take up an entire course all on there own. In this section we just limit ourselves how a RSF-analysis can be done in R. More details on methods to estimate RSFs: e.g. Manly et al. (2002), Millspaugh et al. (2006), Johnson et al. (2006).
+
+As we move forward in this section, we are going to assume that your study design and data assessment has dealt with issues of collinearity in predictor variables 
+and a priori hypothesis were used to generate your models used in logistic regression. 
+
+There are several ways to to calculate RSFs in R using logistic functions that can assess population level or intra-population variation. The use of General Linear Models with various function using the lme4 package is often used for estimating population-level models only. Alternatively, we can assess intra-population variation using the glmer function. Assessing intra-population variation is a mixed-model approach that provides a powerful and flexible tool for the analysis of balanced and unbalanced grouped data that are often common in wildlife studies that have correlation between observations within the same group or variation among individuals at the same site (Gillies et al. 2006).
+
+Let's load the libraries we need and the data.
+```{r}
+library(lme4)
+library(AICcmodavg)
+library(adehabitatHR)
+
+#Load text files for each season
+data_1 <- read.csv("deer.csv",header=T)
+str(data_1)
+```
+
+Next, we turn the crop-variable into factors and scale the variables d_cover and d_roads (to have a mean of 0 and standard deviation of 1).
+
+```{r}
+data_1$crop=as.factor(data_1$crop)
+data_1[,3:4]=scale(data_1[,3:4],scale=TRUE)
+```
+We may need to use code that changes Reference Categories of our data. For our analysis we are going to define reference category of used habitat as crop=1. Crop category 1 is sunflowere which is the crop of interest (but was not selected for based on Selection Ratios example in the previous section).
+
+Now we are going to fit a glmer-function in which the individual animals are
+so-called random effects.
+
+```{r}
+#Sunflower and cover model
+fit1 = glmer(use ~ relevel(crop,"1")+(1|animal_id), data=data_1,
+             family=binomial(link="logit"),nAGQ = 0)
+
+#Distance to cover only model
+fit2 = glmer(use ~ d_cover+(1|animal_id), data=data_1,
+             family=binomial(link="logit"),nAGQ = 0)
+
+#Distance to roads only model
+fit3 = glmer(use ~ d_roads+(1|animal_id), data=data_1,
+             family=binomial(link="logit"), nAGQ = 0)
+
+#Distance to cover and roads model
+fit4 = glmer(use ~ d_cover+d_roads+(1|animal_id), data=data_1,
+    family=binomial(link="logit"),nAGQ = 0)
+
+#Intercept model
+fit5 = glmer(use ~ 1|animal_id, data=data_1, family=binomial(link="logit"),
+    nAGQ = 0)
+```
+
+We can view the results of our modeling procedure to select the best model using Akaike's Information Criteria (AIC; Burnham and Anderson 2002).
+
+```{r}
+fit1
+fit2
+fit3
+fit4
+fit5
+AIC(fit1,fit2,fit3,fit4,fit5)
+mynames <- paste("fit", as.character(1:5), sep = "")
+myaicc <- aictab(list(fit1,fit2,fit3,fit4,fit5), modnames = mynames)
+print(myaicc, LL = FALSE)
+```
+Our top model (fit 1) has all the support in this case indicating that during winter 2012 the mule deer were selecting for each habitat over sunflower. Considering sunflower is not available during the winter months this makes perfect sense. Looking at parameter estimates and confidence intervals for the additional habitat categories in fit 1 we see that forest (category 4) is most selected habitat followed by shrub (category 5). This is only a simply way to look at habitat, however, we used more animals that were on the air for several years and also could look at distance to habitat instead of representing habitat as categorical data.
+
+Let's look at the confidence intervals for the best models, to interpret the
+results.
+```{r}
+( per1_se <- sqrt(diag(vcov(fit1))) )
+
+# table of estimates with 95% CI
+( tab_per1 <- cbind(Est = fixef(fit1), LL = fixef(fit1) - 1.96 * per1_se,
+    UL = fixef(fit1) + 1.96 * per1_se) )
+```
+
+We can then create a surface of predictions from our top model indicating where in our study site we might find the highest probability of use. 
+To do this, we need to have a file with data for each x,y coordinate (and
+associated predictors) for which we'd like to have a prediction.
+the export a text file from our "layer" created in Exercise 8.3.
+```{r}
+  layer1 <- read.csv("predict.csv")
+  names(layer1) <- c("crop", "d_cover", "d_roads","x", "y")
+  str(layer1)
+  head(layer1)
+```
+
+Before we can apply this data, we also need to adjust the standardize the raw distance rasters and also turn crop into categories to match what we modeled!
+```{r}
+layer1[,2:3]=scale(layer1[,2:3],scale=TRUE)
+layer1$crop <- as.factor(layer1$crop)
+head(layer1)
+```    
+
+And now we are ready to make predictions.
+
+```{r}
+#predictions based on best model
+predictions <- predict(fit1, newdata=layer1, re.form=NA, type="link") 
+
+# based on the scale of the linear predictors
+# to transform back, we have to take the exp()
+predictions = exp(predictions)
+range(predictions)
+
+#Create Ascii grid of raw predictions if needed
+layer1$predictions = predictions
+
+#preds = layer1
+#preds = SpatialPixelsDataFrame(points=preds[c("x", "y")], data=preds)
+#preds = as(preds, "SpatialGridDataFrame")
+#names(preds)
+#writeAsciiGrid(preds, "predictions.asc", attr=13) 
+# attr should be column number for 'predictions'
+```
+
+The following code assigns each cell or habitat unit to a 'prediction class'. 
+Classes have (nearly) equal area, if the cells or habitat units have equal areas.
+The output from this function is a vector of class assignments (higher is better).
+
+```{r}
+F.prediction.classes <- function(raw.prediction, n.classes){
+    # raw.prediction = vector of raw (or scaled) RSF predictions
+    # n.classes = number of prediction classes.
+  pred.quantiles = quantile(raw.prediction, probs=seq(1/n.classes, 
+                                                      1-1/n.classes,by=1/n.classes))
+  ans = rep(n.classes, length(raw.prediction))
+  for(i in (n.classes-1):1){
+    ans[raw.prediction < pred.quantiles[i]] = i
+    }
+    return(ans)
+  }
+
+str(layer1)
+layer1$prediction.class = F.prediction.classes(layer1$predictions, 6)
+    #attr should be column number for 'predictions'
+    table(layer1$prediction.class)
+```
+    
+We also create a map of the RSF prediction.
+```{r}
+m = SpatialPixelsDataFrame(points = layer1[c("x", "y")], data=layer1)
+names(m)
+par(mar=c(0,0,0,0))
+image(m, attr=7, col=c("grey90", "grey70", "grey50", "grey30", "grey10"))
+par(lend=1)
+legend("bottomright", col=rev(c("grey90", "grey70", "grey50", "grey30", "grey10")),
+       legend=c("High", "Medium-high", "Medium", "Medium-low", "Low"),
+       title="Prediction Class", pch=15, cex=1.0,bty != "n", bg="white")
+#Create Ascii grid of prediction classes if needed
+#m = as(m, "SpatialGridDataFrame")
+#names(m)
+#writeAsciiGrid(m, "PredictionClassess.asc", attr=7)
+```
+
+This short demonstration only scratches the surface of what is possible with
+fitting a logistic function. And more importantly, it does not demonstrate 
+important issues of calibration and validation.
+
+If you want go more in depth and learn more about classification models
+(not just linear models, and not just within the domain of RSFs), including how 
+to properly interpret them and apply calibration and validation. Study this book:
+'An Introduction to Statistical Learning with Applications in R (ISLR)' by Garreth et al. (it is available, together with exercise material and video-lectures at www.StatLearning.com)
+
+
+### Exercises (1 hour)
+
+Pick one of the exercises below to get some exeperience in applying the above 
+techniques. We will discuss these later on.
+
+1. Try different forms of the RSFs to the example-data (e.g. apply a normal glm
+   and study the differences).
+2. There is another data-file with more 'distance-predictors': `deer_dvar.csv`, 
+apply the logistic model using this data.
+2. Apply some form of (cross-) validation to actually test the RSF you fitted.
+3. Apply a decision-tree method (e.g. using the rpart library) to analyse 
+resource selection.
+4. Apply a RSF analysis to the selection of land use or terrain
+by the roe deer and Corine data + DEM that was used during the first 
+three days of this course. 
+5. (If you know logistic regression already, and find all of this boring.) Try to apply the SSF-tools recently presented by Signer et al. (2018).
+
+### Discussion (15 minutes)
+
+After this block we will look into how far we got, and discuss some 
+issues with the 'Resource Selection Functions-approach'.
+
+
+## Literature
+    
+Aebischer, N. J., Robertson, P. A. and Kenward, R. E. (1993) Compositional analysis of habitat use from animal radiotracking data. Ecology, 74, 1313-1325.
+
+Burnham, K. P. and D. R. Anderson (2002) Model selection and multimodel inference:
+a practical information-theoretic approach, Volume 2nd. New York: Springer-Verlag.
+New York USA.
+
+Johnson, D. H. (1980) The comparison of usage and availability measurements for evaluating resource preference. Ecology, 61, 65-71.
+
+Manly B.F.J., McDonald L.L., Thomas, D.L., McDonald, T.L. & Erickson, W.P. (2003) Resource selection by animals - Statistical design and Analysis for field studies. Second edition London: Kluwer academic publishers.
+
+Thomas D. L. and Taylor E. J. (1990) Study designs and tests for comparing resource use and availability. Journal of Wildlife Management, 54, 322-330.
