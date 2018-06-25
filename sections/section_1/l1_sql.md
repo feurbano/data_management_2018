@@ -5,13 +5,13 @@
 * [1.3  Schemas, tables, data types, primary key](#c_1.3)
 * [1.4  SELECT, FROM, WHERE](#c_1.4)
 * [1.5  AND, OR, IN, !=, NULL](#c_1.5)
-* [1.6  ORDER BY, LIMIT,  DISTINCT, CASE, CAST, COALESCE](#c_1.6)
+* [1.6  ORDER BY, LIMIT, DISTINCT, CASE, CAST, COALESCE](#c_1.6)
 * [1.7  LIKE](#c_1.7)
 * [1.8  GROUP BY (COUNT, SUM, MIN, MAX, AVG, STDDEV)](#c_1.8)
 * [1.9  HAVING](#c_1.9)
 * [1.10  Joining multiple tables](#c_1.10)
 * [1.11  LEFT JOIN](#c_1.11)
-* [1.12  Subqueries used in FROM statement](#c_1.12)
+* [1.12  Subqueries used in FROM statement, WITH](#c_1.12)
 * [1.13  WINDOW functions](#c_1.13)
 * [1.14  INSERT, UPDATE, DELETE](#c_1.14)
 * [1.15  Temporal data (date, time, timezone), EXTRACT](#c_1.15)
@@ -457,7 +457,7 @@ In this case, also the age class code with no animals associated are reported.
 ##### EXERCISE
 * Count how many animals are included in the table *main.animals* for each species listed in the table *lu_tables.lu_species* (report '0' instead of *NULL* if there are no animals for that species).
 
-## <a name="c_1.12"></a>1.12 Subqueries used in FROM statement
+## <a name="c_1.12"></a>1.12 Subqueries used in FROM statement, WITH
 In the `FROM` you can you not only tables, but also the result of another `SELECT`, as far as it is in parenthesis and that an alias is provided. The result of the sub-query will be traten by PostgreSQL as a table. Here an example.
 
 ```sql
@@ -467,17 +467,29 @@ SELECT
   stddev(dist_animal.avg_dist_animal)::integer AS stddev_distance_individual,
   min(dist_animal.avg_dist_animal)::integer AS min_distance_individual, 
   max(dist_animal.avg_dist_animal)::integer AS max_distance_individual 
-   
 FROM
 	(SELECT animals_id, avg(roads_dist) avg_dist_animal
 	FROM main.gps_data_animals
 	GROUP BY animals_id) AS dist_animal 
 ;
 ```
+`WITH` provides a way to write auxiliary statements for use in a larger query. These statements can be thought of as defining temporary tables that exist just for one query. Once defined at the beginning of the query with the syntax `WITH name_with_query AS (with_query)`, it can be referred to from the subsequent query as a (virtual) table. It is useful when the same subquery is used multiple time same query and to improve the readability of the query as it makes the SQL code more linear. This is an example:
 
-##### EXERCISE
-* Retrive the animal with the largest altitudinal range
+```sql
+WITH dist_animal AS
+(SELECT animals_id, avg(roads_dist) avg_dist_animal
+  FROM main.gps_data_animals
+  GROUP BY animals_id)
 
+SELECT 
+  count(dist_animal.animals_id)::integer AS num_individuals,
+  avg(dist_animal.avg_dist_animal)::integer AS avg_distance_individual,
+  stddev(dist_animal.avg_dist_animal)::integer AS stddev_distance_individual,
+  min(dist_animal.avg_dist_animal)::integer AS min_distance_individual, 
+  max(dist_animal.avg_dist_animal)::integer AS max_distance_individual 
+FROM
+  dist_animal;
+```
 
 ## <a name="c_1.13"></a>1.13 WINDOW functions
 

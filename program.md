@@ -19,7 +19,7 @@
 * 1.9 HAVING
 * 1.10 Joining multiple tables
 * 1.11 LEFT JOIN
-* 1.12 Subqueries used in FROM statement
+* 1.12 Subqueries used in FROM statement, WITH
 * 1.13 WINDOW functions
 * 1.14 INSERT, UPDATE, DELETE
 * 1.15 Temporal data (date, time, timezone), EXTRACT
