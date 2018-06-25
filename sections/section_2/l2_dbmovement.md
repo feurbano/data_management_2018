@@ -1066,7 +1066,7 @@ WHERE
  ST_Intersects(gps_data_animals.geom,adm_boundaries.geom);
 ```
 
-To identify the closest meteorological stations to each GPS locations, you have to calculate the distance from locations to all the stations, order by the distance and then limit the result to the first record:
+To identify the closest meteorological stations to each GPS locations, you have to calculate the distance from locations to all the stations, order by the distance and then limit the result to the first record. On possible syntax is `DISTINCT ON ( expression [, ...] )`. It keeps only the first row of each set of rows where the given expressions evaluate to equal. The first row of each set is unpredictable unless `ORDER BY` is used to ensure that the desired row appears first. The `DISTINCT ON` expression(s) must match the leftmost `ORDER BY` expression(s). In this we you have the first record of each subset (specified by the `DISTINCT ON`), while with `Limit 1` you would have a single row for the whole data set.
 
 ```sql
 UPDATE 
