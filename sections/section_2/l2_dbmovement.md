@@ -830,13 +830,11 @@ Now you create view with a different representation of your data sets. In this c
 CREATE VIEW analysis.view_trajectories AS 
   SELECT 
     animals_id, 
-    ST_MakeLine(geom)::geometry(LineString,4326) AS geom 
+    ST_MakeLine(geom ORDER BY animals_id, acquisition_time)::geometry(LineString,4326) AS geom 
   FROM 
-    (SELECT animals_id, geom, acquisition_time 
-    FROM main.gps_data_animals 
-    WHERE geom IS NOT NULL 
-    ORDER BY 
-    animals_id, acquisition_time) AS sel_subquery 
+    main.gps_data_animals
+  WHERE 
+    geom IS NOT NULL
   GROUP BY 
     animals_id;
 ```
@@ -1373,18 +1371,16 @@ WHERE
 Now repeat the same operation for *analysis.view_trajectories*:
 ```sql
 CREATE OR REPLACE VIEW analysis.view_trajectories AS 
-SELECT 
-  sel_subquery.animals_id,
-  st_MakeLine(sel_subquery.geom)::geometry(LineString,4326) AS geom
-FROM 
-  (SELECT 
-    gps_data_animals.animals_id, 
-    gps_data_animals.geom, 
-    gps_data_animals.acquisition_time
-  FROM main.gps_data_animals
-  WHERE gps_data_animals.gps_validity_code = 1
-  ORDER BY gps_data_animals.animals_id, gps_data_animals.acquisition_time) sel_subquery
-GROUP BY sel_subquery.animals_id;
+  SELECT 
+    animals_id, 
+    ST_MakeLine(geom ORDER BY animals_id, acquisition_time)::geometry(LineString,4326) AS geom 
+  FROM 
+    main.gps_data_animals
+  WHERE 
+    geom IS NOT NULL AND
+    gps_data_animals.gps_validity_code = 1
+  GROUP BY 
+    animals_id;
 ```
 
 ## <a name="c_2.10"></a>2.10 Data export 
