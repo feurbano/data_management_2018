@@ -154,7 +154,7 @@ In the original file, date is expressed as DD/MM/YY, so if it is not set to *ISO
 SET SESSION datestyle = "ISO, DMY"; 
 ```
 
-This will change the *datastyle* for the current session only. If you want to change this setting permanently, you have to modify the *datestyle* option in the **[postgresql.conf](http://www.postgresql.org/docs/devel/static/config-setting.html#CONFIG-SETTING-CONFIGURATION-FILE)** file.
+This will change the *datastyle* for the current session only. If you want to change this setting permanently, you have to modify the *datestyle* option in the **[postgresql.conf](http://www.postgresql.org/docs/devel/static/config-setting.html#CONFIG-SETTING-CONFIGURATION-FILE)** file (`datestyle = 'iso, dmy'`). It is located in the *data* subfolder inside the folder where you installed PostgreSQL (for example, *C:/PostgreSQL/data/postgresql.conf*). PgAdmin offers a GUI to modify the postgresql.conf file (menu *File/Open postgresql.conf*, then you have to identify the file in your file system).
 
 PgAdmin offers the possibility to import data (including local data to a server) with a graphical interface (right click on the table, and select *Import* setting all the proper parameters and options). 
 
