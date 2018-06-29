@@ -124,6 +124,13 @@ and graphics.
 
 ## 3.2 An Introduction to Movement Ecology in R
 
+This section heavily relies on the database created so far. It is thus
+expected that a full tracking database is ready and functional. Check
+the previous section ([*Backup of the database created in SECTION
+2*](../section_2/l2_dbmovement.md#backup-of-the-database-created-in-section-2))
+for details on how to restore a full database, with a link to a
+complete backup.
+
 For the analysis of animal tracking data, we often use functions from
 the adehabitat family which consists of four packages:
 
