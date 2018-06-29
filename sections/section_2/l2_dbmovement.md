@@ -154,7 +154,34 @@ In the original file, date is expressed as DD/MM/YY, so if it is not set to *ISO
 SET SESSION datestyle = "ISO, DMY"; 
 ```
 
-This will change the *datastyle* for the current session only. If you want to change this setting permanently, you have to modify the *datestyle* option in the **[postgresql.conf](http://www.postgresql.org/docs/devel/static/config-setting.html#CONFIG-SETTING-CONFIGURATION-FILE)** file (`datestyle = 'iso, dmy'`). It is located in the *data* subfolder inside the folder where you installed PostgreSQL (for example, *C:/PostgreSQL/data/postgresql.conf*). PgAdmin offers a GUI to modify the postgresql.conf file (menu *File/Open postgresql.conf*, then you have to identify the file in your file system).
+This will change the *datastyle* for the current session only.
+
+If you want to change the setting permanently for a single database only, you can use the SQL command:
+
+```sql
+ALTER DATABASE gps_tracking_db SET DateStyle = 'ISO, DMY';
+```
+
+If you want to change this setting permanently for your database server, you have to modify the *datestyle* option in the **[postgresql.conf](http://www.postgresql.org/docs/devel/static/config-setting.html#CONFIG-SETTING-CONFIGURATION-FILE)** file (`datestyle = 'iso, dmy'`). It is located in the *data* subfolder inside the folder where you installed PostgreSQL (for example, *C:/PostgreSQL/data/postgresql.conf*).  
+PgAdmin offers a GUI to modify the *postgresql.conf* file (menu *File/Open postgresql.conf*, then you have to identify the file in your file system).
+
+In a similar way you can change the default time zone:
+```sql
+SHOW timezone; 
+```
+for a single session:
+
+```sql
+SET SESSION timezone = "UTC"; 
+```
+
+for a single database:
+
+```sql
+ALTER DATABASE gps_tracking_db SET timezone = 'UTC';
+```
+
+or for the database server changing the *postgresql.conf* file.
 
 PgAdmin offers the possibility to import data (including local data to a server) with a graphical interface (right click on the table, and select *Import* setting all the proper parameters and options). 
 
@@ -1405,25 +1432,68 @@ If you want to automatically generate a backup of your database, you can create 
 
    echo on
    
-   C:/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username "postgres" --no-password  --format tar --blobs --encoding UTF8 --verbose --file "C:/backup/bu_dbtracking_%datestr%.backup"  -d tracking_db --schema "lu_tables" --schema "main" --schema "tools" 
+   C:/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username "postgres" --no-password  --format tar --blobs --encoding UTF8 --verbose --file "C:/tracking_db/bu_dbtracking_%datestr%.backup"  -d tracking_db --schema "lu_tables" --schema "main" --schema "tools" 
 ```
 
 In this case, the name of the file generated includes the current date. Only three schema (main, lu_tables and tools) are backed up.
 
 If you have tables that change frequently and others that remain unchanged for long periods of time, you can plan frequent backups for the former and occasional backups for the latter.
 
+### Backup of the database created in SECTION 2
+
+If you want to create a copy of the database create throughout this SECTION (**Movement Ecology Data Management with PostgreSQL/PostGIS**), here you have a backup (with some additional elements):
+
+**[gps_tracking_db.backup](https://github.com/feurbano/data_management_2018/tree/master/sections/data/gps_tracking_db.backup)**
+
+It is useful if you want to verify the work done so far or if you do not have created the database but you want to try the code reported in SECTION 3 (**Movement Ecology Data Analysis with R**).
+
+The code (run from the shell as this is not SQL but it based on the *pg_dump.exe* tool) used to create the backup is:
+```
+C:/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username "postgres" --no-password  --format custom --blobs --verbose --file "C:/tracking_db/gps_tracking_db.backup" --schema "analysis" --schema "env_data" --schema "lu_tables" --schema "main" --schema "temp" --schema "traj" "gps_tracking_db"
+```
+
+First of all, you have to create an empty database where you can restore the backup.
+
+```sql
+CREATE DATABASE delete
+  WITH  ENCODING = 'UTF8'
+       LC_COLLATE = 'C'
+       LC_CTYPE = 'C';
+```
+
+Then you have to enable PostGIS inside the database (you have to connect to the database just created):
+
+```sql
+CREATE EXTENSION postgis;
+```
+
+If it does not already exist on your server, you have to create the `basic_user` user:
+
+```sql
+CREATE ROLE basic_user LOGIN
+  NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+```
+
+Then you can restore the database (again, form command line as this is not SQL):
+
+```
+C:/PostgreSQL/9.5/bin/pg_restore.exe --host localhost --port 5432 --username "postgres" --dbname "gps_tracking_db" --no-password  --verbose "C:/tracking_db/gps_tracking_db.backup"
+```
+
+The backup and restore can also be run using PgAdmin GUI.
+
 ## <a name="c_2.12"></a>2.12 Recap exercises
 
-1.  Calculate number of locations per animal per month
-2.  Calculate average distance between locations per animal per month
-3.  Find animals at same place (distance between locations < 100 m) at the same time (temporal difference between locations < 5 h)
-4.  Find how many locations falls in the home range (convex hulls) of another animal
+1.  Calculate the number of locations per animal per month
+2.  Calculate the average distance between valid locations per animal
+3.  Find the couples of animals that are in same place (distance between locations < 100 m) at the same time (temporal difference between locations < 5 h) at least once.
+4.  Find how many locations of other animals fall in the home range (convex hulls) od animal 1
 5.  Find the GPS position stored in the database that is closest to the city of Trento
 6.  Is the average distance covered between 8 p.m. and 8 a.m smaller or bigger than the average distance covered between 8 a.m. and 8 p.m?
 7.  Is the average distance covered in winter smaller or bigger than in summer?
 8.  Find the animal with the largest monthly convex hull polygon
 9.  Calculate the main statistics of the altitudinal range for all animals in winter months
-10.  Design a general schema of a possible database extension (i.e. table(s) and their links) to include information on capture and particularly on:
+10.  Design a general schema of a possible database extension (i.e. columns and table(s) and their links) to include information on capture and particularly on:
     -   date and time of the capture (note that the same animal can be captured more than once)
     -   location of capture
     -   capture method
@@ -1431,3 +1501,8 @@ If you have tables that change frequently and others that remain unchanged for l
     -   if the animal was collared, in this case include the code of the collar
     -   the name/id of the animal
     -   body temperature (note that temperature can be measured more than once at the different stages of the capture).
+11. Find the total number of locations for males and females
+12. Calculate the altitudinal range of the whole population (min and max altitude)
+13. Find the animal with the longest total trajectory
+14. Find the animal with the smallest convex hull polygon
+15. Calculate the time range of the population monitoring (First and last location recorded)
