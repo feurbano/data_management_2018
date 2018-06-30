@@ -44,7 +44,7 @@
 * 2.8 Integrating spatial ancillary information
 * 2.9 Data quality: how to detect and manage outliers
 * 2.10 Data export
-* 2.11 Database maintenance
+* 2.11 Backup and restore of the db created in Section 2
 * 2.12 Recap exercises
 * 2.13 Raster Data in PostGIS (demo)
 * 2.14 Functions and triggers (supplementary material)

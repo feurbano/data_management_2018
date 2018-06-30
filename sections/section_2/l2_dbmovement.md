@@ -10,7 +10,7 @@
 * **[2.8 Integrating spatial ancillary information: land cover](#c_2.8)**
 * **[2.9 Data quality: how to detect and manage outliers](#c_2.9)**
 * **[2.10 Data export](#c_2.10)**
-* **[2.11 Database maintenance](#c_2.11)**
+* **[2.11 Backup and restore of the db created in Section 2](#c_2.11)**
 * **[2.12 Recap exercises](#c_2.12)**
 * **[2.13 Raster Data in PostGIS (demo)](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.13_raster.md)**
 * **[2.14 Functions and triggers (supplementary material)](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.14_supplementary.md)**
@@ -1415,31 +1415,9 @@ There are different ways to export a table or the results of a query to an exter
 Another possibility to export data is to use the pgAdmin interface: in the SQL console select `Query/Execute to file`, the results will be saved to a local file instead of being visualized. Other database interfaces have similar tools. This can be applied to any query.
 For spatial data, the easiest option is to load the data in QGIS and then save as shapefile (or any other format) on your computer.
 
-## <a name="c_2.11"></a>2.11 Database maintenance
+## <a name="c_2.11"></a>2.11 Backup and restore of the db created in Section 2
+
 Once your database is populated and used for daily work, it is a *really* good idea to routinely make a safe copy of your data. Since the RDBMS maintains data in a binary format which is not meant to be tampered with, we need to `dump` the database content in a format suitable for being later restored if it needs be. The very same dump could also be used for replicating the database contents on another server.
-From pgAdmin, the operation of making a database dump is extremely simple: right click the database and choose `Backup`.
-There are a few output formats, apart from the default `Custom` one. With `Plain` the file will be plain (readable) SQL commands that can be opened (and edit, if needed) with a text editor (e.g. Notepad++). `Tar` will generate a compressed file that is convenient if you have frequent backups and you want to maintain an archive. For more info, see the docs on **[backup and restore](http://www.postgresql.org/docs/current/static/backup-dump.html)** for further information.  
-If you want to automatically generate a backup of your database, you can create a bash script and schedule its execution on your server with the desired frequency. Here an example of a batch file on a Windows server:
-
-```
-@echo off
-   for /f "tokens=1-3 delims=/ " %%i in ("%date%") do (
-     set day=%%i
-     set month=%%j
-     set year=%%k
-   )
-   set datestr=%year%%month%%day%
-
-   echo on
-   
-   C:/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username "postgres" --no-password  --format tar --blobs --encoding UTF8 --verbose --file "C:/tracking_db/bu_dbtracking_%datestr%.backup"  -d tracking_db --schema "lu_tables" --schema "main" --schema "tools" 
-```
-
-In this case, the name of the file generated includes the current date. Only three schema (main, lu_tables and tools) are backed up.
-
-If you have tables that change frequently and others that remain unchanged for long periods of time, you can plan frequent backups for the former and occasional backups for the latter.
-
-### Backup of the database created in SECTION 2
 
 If you want to create a copy of the database create throughout this SECTION (**Movement Ecology Data Management with PostgreSQL/PostGIS**), here you have a backup (with some additional elements):
 
@@ -1480,7 +1458,27 @@ Then you can restore the database (again, form command line as this is not SQL):
 C:/PostgreSQL/9.5/bin/pg_restore.exe --host localhost --port 5432 --username "postgres" --dbname "gps_tracking_db" --no-password  --verbose "C:/tracking_db/gps_tracking_db.backup"
 ```
 
-The backup and restore can also be run using PgAdmin GUI.
+The backup and restore can also be run using PgAdmin GUI. From pgAdmin, the operation of making a database dump is extremely simple: right click the database and choose `Backup`.
+There are a few output formats, apart from the default `Custom` one. With `Plain` the file will be plain (readable) SQL commands that can be opened (and edit, if needed) with a text editor (e.g. Notepad++). `Tar` will generate a compressed file that is convenient if you have frequent backups and you want to maintain an archive. For more info, see the docs on **[backup and restore](http://www.postgresql.org/docs/current/static/backup-dump.html)** for further information.  
+If you want to automatically generate a backup of your database, you can create a bash script and schedule its execution on your server with the desired frequency. Here an example of a batch file on a Windows server:
+
+```
+@echo off
+   for /f "tokens=1-3 delims=/ " %%i in ("%date%") do (
+     set day=%%i
+     set month=%%j
+     set year=%%k
+   )
+   set datestr=%year%%month%%day%
+
+   echo on
+   
+   C:/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username "postgres" --no-password  --format tar --blobs --encoding UTF8 --verbose --file "C:/tracking_db/bu_dbtracking_%datestr%.backup"  -d tracking_db --schema "lu_tables" --schema "main" --schema "tools" 
+```
+
+In this case, the name of the file generated includes the current date. Only three schema (main, lu_tables and tools) are backed up.
+
+If you have tables that change frequently and others that remain unchanged for long periods of time, you can plan frequent backups for the former and occasional backups for the latter.
 
 ## <a name="c_2.12"></a>2.12 Recap exercises
 
