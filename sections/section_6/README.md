@@ -10,3 +10,6 @@
 * **[Presentation: slides](https://github.com/feurbano/data_management_2018/tree/master/sections/section_6/accelerometer_data/FEM-webinar2018.pdf)** (.pdf)
 
 ###  Data sharing and Data Standards for a Better Science (Sarah Davidson)
+
+* **[Presentation: slides](https://github.com/feurbano/data_management_2018/tree/master/sections/section_6/data_sharing/FEM-Data-sharing-Davidson-2018.pdf)** (.pdf)
+

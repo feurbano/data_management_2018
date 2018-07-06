@@ -1,4 +1,4 @@
-# 1. SQL and Spatial SQL
+# 1. SQL and Spatial SQL (10 h)
 
 * [1.1  Introduction to SQL](#c_1.1)
 * [1.2  Overview of the database used for the exercises](#c_1.2)
