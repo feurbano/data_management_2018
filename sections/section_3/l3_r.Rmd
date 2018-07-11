@@ -36,6 +36,7 @@
         - [3.4.2 In the Middle of the Night](#342-in-the-middle-of-the-night)
         - [3.4.2 Extending the Home Range Concept](#342-extending-the-home-range-concept)
         - [3.4.4 Concluding remarks about Pl/R](#344-concluding-remarks-about-plr)
+    - [3.5 Recap exercises](#35-recap-exercises)
 
 <!-- markdown-toc end -->
 
@@ -1253,3 +1254,40 @@ The limits of the approach are, unfortunately, exactly the same as for
 connecting R to PostGIS: communicating complex spatial objects can be
 a real issue (e.g. using `rgdal` or manipulating rasters in
 general). However, we can only expect progress in this area.
+
+
+
+## 3.5 Recap exercises
+
+
+### 3.5.1 Pure R
+
+Generate a correlated random walk of 1000 steps, with a concentration
+parameter of `r = 0.6`, and a seed for the random number generator of
+`1234`. From there, rediscretize the trajectory every 10 seconds. What
+is the path length ratio between the rediscretized random walk and the
+original one?
+
+
+### 3.5.2 R and PostGIS interaction
+
+Using only R (with `RPostgreSQL` and `rpostgis`) to interact with your
+PostGIS database, import the roe deer data, keeping only valid
+locations.
+
+From there:
+
+1. Compute 50%, 90%, and 100% minimum convex polygons (MCP) for each
+   individual.
+2. Export all resulting polygons in a dedicated table in PostGIS,
+   keeping the information about the individual, the method, and the
+   percentage associated to the home range estimate.
+3. Prepare a SQL query (in R!) to compare, for each individual, the
+   area of the 100% MCP computed in R, and the same estimation using
+   PostGIS (which calls it a convex hull), and retrieve the result in
+   R. Are the two software consistent?
+4. Prepare a SQL query (in R!) to intersect each MCP (50%, 90% and
+   100%) with the town of Terlago (46.001°N; 11.001°E), and retrieve
+   the identity of individuals that include Terlago in their home
+   range. Map it in R to show the home range(s) overlapping with
+   Terlago. 
