@@ -1,4 +1,4 @@
-# <a name="c_2.1"></a>2. Movement Ecology Data Management with PostgreSQL/PostGIS
+# <a name="c_2.1"></a>2. Movement Ecology Data Management with PostgreSQL/PostGIS (10 h)
 
 * **[2.1 Introduction](#c_2.1)**
 * **[2.2 Create a db and import sensor data](#c_2.2)**
