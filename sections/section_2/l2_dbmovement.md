@@ -15,6 +15,8 @@
 * **[2.13 Raster Data in PostGIS (demo)](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.13_raster.md)**
 * **[2.14 Functions and triggers (supplementary material)](https://github.com/feurbano/data_management_2018/blob/master/sections/section_2/l2.14_supplementary.md)**
 
+### NOTE
+The material reported in this section has been created by Ferdinando Urbano, Francesca Cagnacci, Mattieu Basille, Johannes de Groeve and David Bucklin and is partially based on the book **[Spatial Database for GPS Wildlife Tracking Data](https://www.springer.com/us/book/9783319037424)** (Urbano & Cagnacci, 2014).
 
 ## <a name="c_2.1"></a>2.1 Introduction
 Once a tracking project starts and sensors are deployed on animals, data begin to arrive (usually in the form of text files containing the raw information recorded by sensors). At this point, data must be handled by researchers. The aim of this exercise is to set up an operational database where GPS data coming from roe deer monitored in the Alps can be stored, managed and analysed. The information form the sensors must be complemented with other information on the individuals, deployments and surrounding environment to have a complete picture of the animals movement.
